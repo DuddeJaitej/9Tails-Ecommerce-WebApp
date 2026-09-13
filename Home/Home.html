@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="Home.css" />
+    <link rel="stylesheet" href="ProductDetail.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        window.GOOGLE_CLIENT_ID = '666048447334-1k5fvkaf20e92klpch2n3hg8c29fdqs3.apps.googleusercontent.com';
+        window.GOOGLE_AUTH_ORIGIN = 'http://127.0.0.1:5500';
+    </script>
+    <title>9Tails — Home</title>
+</head>
+<body>
+    <div class="main-container">
+        <div class="nav-container">
+            <nav class="nav">
+                <div class="nav-brand-row">
+                    <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">☰</button>
+                    <h1>9Tails</h1>
+                </div>
+                <div class="nav-links" id="navLinks">
+                    <ul>
+                        <li><a class="nav-link active" href="Home.html">Home</a></li>
+                        <li><a class="nav-link" href="Orders.html">Orders</a></li>
+                        <li>
+                            <button class="cart-toggle" type="button" aria-label="Open cart">
+                                <img src="../Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
+                                <span class="cart-count">0</span>
+                            </button>
+                        </li>
+                        <li><button class="login" type="button">Login</button></li>
+                        <li class="nav-profile hidden">
+                            <button class="profile-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
+                                <img class="profile-photo" src="" alt="Profile photo" />
+                                <span class="profile-name"></span>
+                            </button>
+                            <div class="profile-menu hidden" role="menu" aria-label="User menu">
+                                <div class="profile-menu-card">
+                                    <p class="profile-menu-email"></p>
+                                    <button class="logout-btn" type="button">Logout</button>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+
+        <div class="hero-container">
+            <div class="hero">
+                <div class="hero-text">
+                    <h1>Welcome to 9tails</h1>
+                    <p>Discover the latest trends in fashion and accessories. Shop now and elevate your style!</p>
+                    <button onclick="document.querySelector('.products-container').scrollIntoView({behavior:'smooth'})">Shop Now</button>
+                </div>
+                <div class="hero-image">
+                    <div class="hero-carousel-track">
+                        <img class="hero-banner-image" src="../Assets/Hero-image/hero-image.png" alt="Hero banner" />
+                        <img class="hero-banner-image" src="../Assets/Hero-image/9products.png" alt="Hero Image 2" />
+                        <img class="hero-banner-image" src="../Assets/Hero-image/Discount-image1.png" alt="Hero Image 3" />
+                        <img class="hero-banner-image" src="../Assets/Hero-image/Gifts-image2.png" alt="Hero Image 4" />
+                    </div>
+                    <div class="hero-dots" aria-label="Hero image indicators"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Showcase Section -->
+        <section class="categories-section" aria-labelledby="catHeading">
+            <div class="categories-inner">
+                <div class="section-header-centered">
+                    <span class="section-eyebrow">Browse by Category</span>
+                    <h2 id="catHeading">Shop Every Style</h2>
+                    <p>From everyday essentials to statement pieces — find what moves you.</p>
+                </div>
+                <div class="categories-grid">
+                    <button class="cat-card" data-category="Fashion" aria-label="Browse Fashion">
+                        <img src="../Assets/Products/Fashion/fashion1.avif" alt="Fashion" />
+                        <div class="cat-card-label">Fashion</div>
+                    </button>
+                    <button class="cat-card" data-category="Jewelry" aria-label="Browse Jewelry">
+                        <img src="../Assets/Products/Jewelry/jewelry5.avif" alt="Jewelry" class="cat-img-center" />
+                        <div class="cat-card-label">Jewelry</div>
+                    </button>
+                    <button class="cat-card" data-category="Watches" aria-label="Browse Watches">
+                        <img src="../Assets/Products/Watches/watches3.avif" alt="Watches" class="cat-img-center" />
+                        <div class="cat-card-label">Watches</div>
+                    </button>
+                    <button class="cat-card" data-category="bags" aria-label="Browse Bags">
+                        <img src="../Assets/Products/bags/bag3.avif" alt="Bags" />
+                        <div class="cat-card-label">Bags</div>
+                    </button>
+                    <button class="cat-card" data-category="Footwear" aria-label="Browse Footwear">
+                        <img src="../Assets/Products/Footwear/footwear1.avif" alt="Footwear" />
+                        <div class="cat-card-label">Footwear</div>
+                    </button>
+                    <button class="cat-card" data-category="Audio & Electronics" aria-label="Browse Audio &amp; Electronics">
+                        <img src="../Assets/Products/Audio & Electronics/audio3.webp" alt="Electronics" />
+                        <div class="cat-card-label">Electronics</div>
+                    </button>
+                    <button class="cat-card" data-category="Beauty & Fragrance" aria-label="Browse Beauty">
+                        <img src="../Assets/Products/Beauty & Fragrance/fregrance4.webp" alt="Beauty" />
+                        <div class="cat-card-label">Beauty</div>
+                    </button>
+                    <button class="cat-card" data-category="Gadgets" aria-label="Browse Gadgets">
+                        <img src="../Assets/Products/Gadgets/gadgets4.webp" alt="Gadgets" class="cat-img-center" />
+                        <div class="cat-card-label">Gadgets</div>
+                    </button>
+                    <button class="cat-card" data-category="Books" aria-label="Browse Books">
+                        <img src="../Assets/Products/Books/books1.webp" alt="Books" class="cat-img-top" />
+                        <div class="cat-card-label">Books</div>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deals / Promo Banner Section -->
+        <section class="deals-section" aria-labelledby="dealsHeading">
+            <div class="deals-inner">
+                <div class="deals-card deals-card--highlight">
+                    <div class="deals-card-text">
+                        <span class="deals-eyebrow">Limited Time</span>
+                        <h3 id="dealsHeading">Up to 40% Off<br/>Summer Styles</h3>
+                        <p>Fresh drops in Fashion, Footwear, and Accessories — curated for the season.</p>
+                        <button class="deals-cta-btn" data-category="Fashion">Shop Fashion</button>
+                    </div>
+                    <img src="../Assets/Products/Fashion/fashion7.avif" alt="Summer fashion deal" class="deals-card-img" />
+                </div>
+                <div class="deals-card deals-card--secondary">
+                    <div class="deals-card-text">
+                        <span class="deals-eyebrow">New Arrivals</span>
+                        <h3>Fine Jewelry<br/>Just Landed</h3>
+                        <p>Handcrafted pieces with lab-grown diamonds and precious gemstones.</p>
+                        <button class="deals-cta-btn" data-category="Jewelry">Explore Jewelry</button>
+                    </div>
+                    <img src="../Assets/Products/Jewelry/jewelry8.avif" alt="New jewelry arrivals" class="deals-card-img" />
+                </div>
+                <div class="deals-card deals-card--accent">
+                    <div class="deals-card-text">
+                        <span class="deals-eyebrow">Best Sellers</span>
+                        <h3>Top-Rated<br/>Watches</h3>
+                        <p>From heritage chronographs to sleek sport editions — time, elevated.</p>
+                        <button class="deals-cta-btn" data-category="Watches">View Watches</button>
+                    </div>
+                    <img src="../Assets/Products/Watches/watches7.avif" alt="Top rated watches" class="deals-card-img" />
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="testimonials-section" aria-labelledby="testimonialsHeading">
+            <div class="testimonials-inner">
+                <div class="section-header-centered">
+                    <span class="section-eyebrow">What Customers Say</span>
+                    <h2 id="testimonialsHeading">Loved by Thousands</h2>
+                </div>
+                <div class="testimonials-grid">
+                    <blockquote class="testimonial-card">
+                        <div class="testimonial-stars" aria-label="5 stars">★★★★★</div>
+                        <p>"The jewelry quality exceeded my expectations. The pearl pendant looks even more beautiful in person — and the packaging was stunning."</p>
+                        <footer>
+                            <div class="testimonial-avatar">P</div>
+                            <cite>
+                                <strong>Priya S.</strong>
+                                <span>Mumbai</span>
+                            </cite>
+                        </footer>
+                    </blockquote>
+                    <blockquote class="testimonial-card">
+                        <div class="testimonial-stars" aria-label="5 stars">★★★★★</div>
+                        <p>"Fast delivery and the cashmere sweater is incredibly soft. This is my third order from 9Tails and it never disappoints. Highly recommend!"</p>
+                        <footer>
+                            <div class="testimonial-avatar">R</div>
+                            <cite>
+                                <strong>Rahul M.</strong>
+                                <span>Bangalore</span>
+                            </cite>
+                        </footer>
+                    </blockquote>
+                    <blockquote class="testimonial-card">
+                        <div class="testimonial-stars" aria-label="5 stars">★★★★★</div>
+                        <p>"Got the noise-cancelling headphones as a gift for my husband. He hasn't taken them off! Great sound quality and the build feels premium."</p>
+                        <footer>
+                            <div class="testimonial-avatar">A</div>
+                            <cite>
+                                <strong>Ananya K.</strong>
+                                <span>Hyderabad</span>
+                            </cite>
+                        </footer>
+                    </blockquote>
+                    <blockquote class="testimonial-card">
+                        <div class="testimonial-stars" aria-label="4 stars">★★★★☆</div>
+                        <p>"Ordered the structured tote and it's exactly as described — roomy, sturdy, and stylish. Ships quickly and customer support was very responsive."</p>
+                        <footer>
+                            <div class="testimonial-avatar">D</div>
+                            <cite>
+                                <strong>Divya T.</strong>
+                                <span>Chennai</span>
+                            </cite>
+                        </footer>
+                    </blockquote>
+                </div>
+            </div>
+        </section>
+
+        <!-- Brand Trust Strip -->
+        <section class="trust-section" aria-label="Why shop with us">
+            <div class="trust-inner">
+                <div class="trust-item">
+                    <span class="trust-icon" aria-hidden="true">🚚</span>
+                    <strong>Free Delivery</strong>
+                    <p>On orders above ₹500</p>
+                </div>
+                <div class="trust-item">
+                    <span class="trust-icon" aria-hidden="true">🔒</span>
+                    <strong>Secure Payments</strong>
+                    <p>UPI, Cards &amp; COD</p>
+                </div>
+                <div class="trust-item">
+                    <span class="trust-icon" aria-hidden="true">↩</span>
+                    <strong>Easy Returns</strong>
+                    <p>7-day hassle-free policy</p>
+                </div>
+                <div class="trust-item">
+                    <span class="trust-icon" aria-hidden="true">✦</span>
+                    <strong>Curated Quality</strong>
+                    <p>Hand-picked by experts</p>
+                </div>
+                <div class="trust-item">
+                    <span class="trust-icon" aria-hidden="true">💬</span>
+                    <strong>24/7 Support</strong>
+                    <p>Always here to help</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="products-container">
+            <div class="products-panel">
+                <div class="products-topbar">
+                    <div class="section-title">
+                        <span>Shop by category</span>
+                        <h2>Featured Collections</h2>
+                    </div>
+                    <div class="tab-list" role="tablist">
+                        <button class="tab-button active" data-category="All">All</button>
+                        <button class="tab-button" data-category="Audio & Electronics">Audio</button>
+                        <button class="tab-button" data-category="bags">Bags</button>
+                        <button class="tab-button" data-category="Beauty & Fragrance">Beauty</button>
+                        <button class="tab-button" data-category="Books">Books</button>
+                        <button class="tab-button" data-category="Fashion">Fashion</button>
+                        <button class="tab-button" data-category="Footwear">Footwear</button>
+                        <button class="tab-button" data-category="Gadgets">Gadgets</button>
+                        <button class="tab-button" data-category="Jewelry">Jewelry</button>
+                        <button class="tab-button" data-category="Watches">Watches</button>
+                    </div>
+                </div>
+
+                <div class="products-grid-layout">
+                    <aside class="filters-panel">
+                        <div class="filter-card">
+                            <h3>Filter by</h3>
+                            <div class="filter-group">
+                                <p>Price</p>
+                                <label><input type="radio" name="price" value="all" checked> All</label>
+                                <label><input type="radio" name="price" value="under50"> Under ₹50</label>
+                                <label><input type="radio" name="price" value="50to150"> ₹50 - ₹150</label>
+                                <label><input type="radio" name="price" value="above150"> Above ₹150</label>
+                            </div>
+                            <div class="filter-group">
+                                <p>Delivery</p>
+                                <label><input type="checkbox" value="inStock"> In stock</label>
+                                <label><input type="checkbox" value="fastDelivery"> Fast delivery</label>
+                            </div>
+                        </div>
+                        <div class="filter-card">
+                            <h3>Sort by</h3>
+                            <select class="sort-select">
+                                <option value="popular">Most Popular</option>
+                                <option value="low">Price Low to High</option>
+                                <option value="high">Price High to Low</option>
+                            </select>
+                        </div>
+                    </aside>
+
+                    <div class="products-grid" id="productsGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-modal hidden" id="authModal" aria-hidden="true">
+        <div class="auth-card">
+            <button class="auth-close" id="authClose" aria-label="Close authentication dialog">×</button>
+            <div class="auth-brand">
+                <span>9Tails</span>
+                <p>Shop the latest collections with secure access.</p>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-mode="login">Login</button>
+                <button class="auth-tab" data-mode="register">Register</button>
+            </div>
+            <div class="auth-body">
+                <form id="authForm" class="auth-form">
+                    <div class="form-group auth-name-group hidden">
+                        <label for="authFullName">Full Name</label>
+                        <input type="text" id="authFullName" name="authFullName" placeholder="Enter your full name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required />
+                    </div>
+                    <button type="submit" class="auth-submit">Login</button>
+                </form>
+                <div class="auth-footer">
+                    <p class="auth-switch-text">Don’t have an account? <button type="button" class="switch-auth" data-mode="register">Register</button></p>
+                </div>
+                <div class="auth-divider"><span>OR</span></div>
+                <button class="google-btn" id="googleSignIn" type="button">Continue with Google</button>
+                <div class="google-selector hidden" id="googleSelector">
+                    <p>Select your Google account</p>
+                    <div class="google-account-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cart-drawer hidden" id="cartDrawer" aria-hidden="true">
+        <div class="cart-header">
+            <div>
+                <span class="eyebrow">My Bag</span>
+                <h3>Shopping Cart</h3>
+            </div>
+            <button class="close-cart" id="closeCart" aria-label="Close cart drawer">×</button>
+        </div>
+        <div class="cart-body">
+            <div class="empty-cart-message">Your cart is empty. Add items to start building your bag.</div>
+            <div class="cart-items"></div>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-summary">
+                <span>Total amount</span>
+                <strong id="cartTotal">₹0.00</strong>
+            </div>
+            <button class="continue-btn" id="continueBtn">Continue</button>
+        </div>
+        <div class="address-panel hidden" id="addressPanel">
+            <div class="address-header">
+                <div>
+                    <span class="eyebrow">Delivery details</span>
+                    <h4>Saved addresses</h4>
+                </div>
+                <label class="save-address-toggle"><input type="checkbox" id="saveAddressToggle"> Save address</label>
+            </div>
+            <div class="saved-addresses" id="savedAddresses"></div>
+            <form class="address-form" id="addressForm">
+                <input type="text" id="fullName" placeholder="Full name" required />
+                <input type="text" id="street" placeholder="Street address" required />
+                <input type="text" id="city" placeholder="City" required />
+                <div class="address-row">
+                    <input type="text" id="postalCode" placeholder="Postal / ZIP code" required />
+                    <input type="text" id="country" placeholder="Country" required />
+                </div>
+                <button type="submit" class="save-btn">Save Address</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="pageOverlay"></div>
+
+    <footer class="site-footer">
+        <div class="footer-brand">
+            <span class="footer-badge">✦ Luxury Essentials</span>
+            <h3>9Tails</h3>
+            <p>Curated fashion, accessories, and everyday essentials — delivered with care to your doorstep.</p>
+        </div>
+        <div class="footer-nav">
+            <h4>Quick Links</h4>
+            <a href="Home.html">Home</a>
+            <a href="Orders.html">My Orders</a>
+            <a href="Cart.html">Shopping Bag</a>
+        </div>
+        <div class="footer-address">
+            <h4>Visit Us</h4>
+            <p>9Tails Store</p>
+            <p>BTM, Bangalore, Karnataka</p>
+            <p>India — 560076</p>
+            <p class="footer-contact">✉ hello@9tails.com</p>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 9Tails. All rights reserved.</span>
+            <span>Made with ♥ in Bangalore</span>
+        </div>
+    </footer>
+
+    <script>
+        /* ── Nav scroll reveal ── */
+        (function () {
+            var nav = document.querySelector('.nav-container');
+            if (!nav) return;
+            function onScroll() {
+                nav.classList.toggle('nav-scrolled', window.scrollY > 10);
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll(); // run once on load
+        })();
+    </script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script src="products-data.js"></script>
+    <script src="Home.js"></script>
+    <script>
+        const navToggle = document.getElementById('navToggle');
+        const navLinks = document.getElementById('navLinks');
+
+        if (navToggle && navLinks) {
+            navToggle.addEventListener('click', () => {
+                const isOpen = navLinks.classList.toggle('open');
+                navToggle.setAttribute('aria-expanded', String(isOpen));
+            });
+        }
+
+        window.tapAuth.initAuth({
+            loginSelector: '.login',
+            navProfileSelector: '.nav-profile',
+            profileNameSelector: '.profile-name',
+            profilePhotoSelector: '.profile-photo',
+            logoutButtonSelector: '.logout-btn'
+        });
+
+        // Category showcase cards → scroll to products and activate tab
+        document.querySelectorAll('.cat-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const cat = card.dataset.category;
+                const tab = document.querySelector(`.tab-button[data-category="${cat}"]`);
+                if (tab) {
+                    tab.click();
+                    tab.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        });
+
+        // Deals section CTA buttons → activate category tab and scroll
+        document.querySelectorAll('.deals-cta-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const cat = btn.dataset.category;
+                const tab = document.querySelector(`.tab-button[data-category="${cat}"]`);
+                if (tab) {
+                    tab.click();
+                    document.querySelector('.products-container').scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

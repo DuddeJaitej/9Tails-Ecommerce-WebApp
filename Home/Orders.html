@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orders - 9Tails</title>
+    <link rel="stylesheet" href="Home.css" />
+    <link rel="stylesheet" href="Orders.css" />
+    <link rel="stylesheet" href="ProductDetail.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        window.GOOGLE_CLIENT_ID = '666048447334-1k5fvkaf20e92klpch2n3hg8c29fdqs3.apps.googleusercontent.com';
+        window.GOOGLE_AUTH_ORIGIN = 'http://127.0.0.1:5500';
+    </script>
+</head>
+<body>
+    <div class="main-container">
+        <div class="nav-container">
+            <nav class="nav">
+                <div class="nav-brand-row">
+                    <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">☰</button>
+                    <h1>9Tails</h1>
+                </div>
+                <div class="nav-links" id="navLinks">
+                    <ul>
+                        <li><a class="nav-link" href="Home.html">Home</a></li>
+                        <li><a class="nav-link active" href="Orders.html">Orders</a></li>
+                        <li>
+                            <button class="cart-toggle" type="button" aria-label="Open cart">
+                                <img src="../Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
+                                <span class="cart-count">0</span>
+                            </button>
+                        </li>
+                        <li><button class="login" type="button">Login</button></li>
+                        <li class="nav-profile hidden">
+                            <button class="profile-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
+                                <img class="profile-photo" src="" alt="Profile photo" />
+                                <span class="profile-name"></span>
+                            </button>
+                            <div class="profile-menu hidden" role="menu" aria-label="User menu">
+                                <div class="profile-menu-card">
+                                    <p class="profile-menu-email"></p>
+                                    <button class="logout-btn" type="button">Logout</button>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+
+        <div class="products-container">
+            <div class="products-panel">
+                <div class="products-topbar">
+                    <div class="section-title">
+                        <span>Your orders</span>
+                        <h2>Order tracking and wishlist</h2>
+                    </div>
+                </div>
+
+                <div class="orders-page-layout">
+                    <div class="view-toggle" role="tablist" aria-label="Orders, wishlist, and help views">
+                        <button class="view-toggle-btn active" type="button" data-view="orders">Orders</button>
+                        <button class="view-toggle-btn" type="button" data-view="wishlist">Wishlist</button>
+                        <button class="view-toggle-btn" type="button" data-view="help">Help Center</button>
+                    </div>
+
+                    <section class="orders-panel" id="ordersPanel">
+                        <div class="orders-panel-header">
+                            <h3>Recent orders</h3>
+                            <p>Track the journey from your store to your doorstep.</p>
+                        </div>
+                        <div class="orders-list" id="ordersList"></div>
+                    </section>
+
+                    <aside class="wishlist-panel hidden" id="wishlistPanel">
+                        <div class="wishlist-panel-header">
+                            <h3>Wishlist</h3>
+                            <p>Saved favorites from the shop.</p>
+                        </div>
+                        <div class="wishlist-list" id="wishlistList"></div>
+                    </aside>
+
+                    <section class="help-panel hidden" id="helpPanel">
+
+                        <!-- Help Center illustration banner -->
+                        <div class="help-banner">
+                            <div class="help-banner-inner">
+                                <div class="help-banner-text">
+                                    <span class="help-banner-eyebrow">Support Team</span>
+                                    <h3 class="help-banner-title">We're here to help you</h3>
+                                    <p class="help-banner-sub">Find quick answers to your shipping, delivery, and returns questions below.</p>
+                                    <div class="help-banner-badges">
+                                        <span class="help-badge">⚡ Fast Response</span>
+                                        <span class="help-badge">📦 Order Support</span>
+                                        <span class="help-badge">🔄 Easy Returns</span>
+                                    </div>
+                                </div>
+                                <div class="help-banner-img-wrap">
+                                    <img src="../Assets/Orders/Help Line.png" alt="Customer support illustration" class="help-banner-img" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="help-panel-header">
+                            <h3>Help center</h3>
+                            <p>Quick answers for shipping, delivery, and returns.</p>
+                        </div>
+                        <div class="faq-list">
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>How long does delivery take?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>Most orders reach you within 2–5 business days in Bangalore and nearby cities. Express delivery is available for select locations.</p>
+                                </div>
+                            </article>
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>Can I change my address after ordering?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>Yes, update your address from the cart summary before the parcel is dispatched. Once shipment starts, changes are limited.</p>
+                                </div>
+                            </article>
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>How do I return an item?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>Use the support chat or email us within 7 days of delivery for a smooth return and refund process.</p>
+                                </div>
+                            </article>
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>Do you offer free shipping?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>Free shipping is available on orders above a selected amount, while smaller orders may include a nominal fee.</p>
+                                </div>
+                            </article>
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>Can I cancel my order after payment?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>Orders can be cancelled before dispatch. After dispatch, the package follows the usual return flow.</p>
+                                </div>
+                            </article>
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>What payment methods do you accept?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>You can pay using UPI, cards, and cash on delivery for eligible addresses and order values.</p>
+                                </div>
+                            </article>
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>Is my personal data secure?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>Yes. We protect your account details with secure authentication and encrypted checkout practices.</p>
+                                </div>
+                            </article>
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>Can I track my package in real time?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>Yes, your order status updates from placed to packed to out for delivery and delivered.</p>
+                                </div>
+                            </article>
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>Do you offer exchanges for size issues?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>Exchanges are available for select items if the product is unused and the request is made within the return window.</p>
+                                </div>
+                            </article>
+                            <article class="faq-card">
+                                <button class="faq-question" type="button" aria-expanded="false">
+                                    <span>How can I contact support?</span>
+                                    <span class="faq-arrow">&#9660;</span>
+                                </button>
+                                <div class="faq-answer hidden">
+                                    <p>You can reach support through the chat icon, email, or the contact section on the website.</p>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-modal hidden" id="authModal" aria-hidden="true">
+        <div class="auth-card">
+            <button class="auth-close" id="authClose" aria-label="Close authentication dialog">×</button>
+            <div class="auth-brand">
+                <span>9Tails</span>
+                <p>Shop the latest collections with secure access.</p>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-mode="login">Login</button>
+                <button class="auth-tab" data-mode="register">Register</button>
+            </div>
+            <div class="auth-body">
+                <form id="authForm" class="auth-form">
+                    <div class="form-group auth-name-group hidden">
+                        <label for="authFullName">Full Name</label>
+                        <input type="text" id="authFullName" name="authFullName" placeholder="Enter your full name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required />
+                    </div>
+                    <button type="submit" class="auth-submit">Login</button>
+                </form>
+                <div class="auth-footer">
+                    <p class="auth-switch-text">Don’t have an account? <button type="button" class="switch-auth" data-mode="register">Register</button></p>
+                </div>
+                <div class="auth-divider"><span>OR</span></div>
+                <button class="google-btn" id="googleSignIn" type="button">Continue with Google</button>
+                <div class="google-selector hidden" id="googleSelector">
+                    <p>Select your Google account</p>
+                    <div class="google-account-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="pageOverlay"></div>
+
+    <script>
+        /* ── Nav scroll reveal ── */
+        (function () {
+            var nav = document.querySelector('.nav-container');
+            if (!nav) return;
+            function onScroll() {
+                nav.classList.toggle('nav-scrolled', window.scrollY > 10);
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        })();
+    </script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        const navToggle = document.getElementById('navToggle');
+        const navLinks = document.getElementById('navLinks');
+
+        if (navToggle && navLinks) {
+            navToggle.addEventListener('click', () => {
+                const isOpen = navLinks.classList.toggle('open');
+                navToggle.setAttribute('aria-expanded', String(isOpen));
+            });
+        }
+
+        window.tapAuth.initAuth({
+            loginSelector: '.login',
+            navProfileSelector: '.nav-profile',
+            profileNameSelector: '.profile-name',
+            profilePhotoSelector: '.profile-photo',
+            logoutButtonSelector: '.logout-btn'
+        });
+
+        const orders  = [];   // will be populated from API or localStorage
+        const wishlist = [];  // will be populated from API or localStorage
+        const ordersList = document.getElementById('ordersList');
+        const wishlistList = document.getElementById('wishlistList');
+        const ordersPanel = document.getElementById('ordersPanel');
+        const wishlistPanel = document.getElementById('wishlistPanel');
+        const helpPanel = document.getElementById('helpPanel');
+        const viewButtons = document.querySelectorAll('.view-toggle-btn');
+        const faqQuestions = document.querySelectorAll('.faq-question');
+        const cartToggle = document.querySelector('.cart-toggle');
+        const cartCountEl = document.querySelector('.cart-count');
+        const cart = JSON.parse(localStorage.getItem('tapCart') || '{}');
+
+        // ── Load data from API (with localStorage fallback) ─────────────────
+        async function loadAllData() {
+            const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
+
+            // Cart count
+            if (window.tapAuth) window.tapAuth.syncCartCountFromApi();
+
+            // ── Orders ──────────────────────────────────────────────────────
+            if (isLoggedIn && window.tapApi) {
+                try {
+                    const page = await window.tapApi.orders.list(0, 50);
+                    const apiOrders = (page.content || []).map(o => ({
+                        id:        o.orderNumber || String(o.id),
+                        _apiId:    o.id,
+                        placedAt:  o.placedAt,
+                        status:    titleCaseStatus(o.status),
+                        total:     Number(o.total),
+                        subtotal:  Number(o.subtotal),
+                        delivery:  Number(o.deliveryCharge),
+                        paymentMethod: (o.paymentMethod || 'COD').toLowerCase(),
+                        items: (o.items || []).map(i => ({
+                            name:     i.productName,
+                            img:      i.productImageUrl || '',
+                            category: i.categoryName,
+                            price:    Number(i.unitPrice),
+                            qty:      i.quantity
+                        })),
+                        address: {
+                            fullName:   o.addressFullName,
+                            street:     o.addressStreet,
+                            city:       o.addressCity,
+                            postalCode: o.addressPostalCode,
+                            country:    o.addressCountry
+                        }
+                    }));
+                    orders.push(...apiOrders);
+                } catch(e) {
+                    // fallback to localStorage
+                    const local = JSON.parse(localStorage.getItem('tapOrders') || '[]');
+                    orders.push(...local);
+                }
+            } else {
+                const local = JSON.parse(localStorage.getItem('tapOrders') || '[]');
+                orders.push(...local);
+            }
+
+            // ── Wishlist ────────────────────────────────────────────────────
+            if (isLoggedIn && window.tapApi) {
+                try {
+                    const apiWishlist = await window.tapApi.wishlist.list();
+                    // API returns ProductDto array
+                    const mapped = (apiWishlist || []).map(p => ({
+                        key:      String(p.id),
+                        _apiId:   p.id,
+                        name:     p.name,
+                        img:      p.imageUrl || '',
+                        category: p.categoryName || '',
+                        price:    Number(p.price),
+                        rating:   p.rating || 4.0,
+                        inStock:  p.inStock
+                    }));
+                    wishlist.push(...mapped);
+                } catch(e) {
+                    const local = JSON.parse(localStorage.getItem('tapWishlist') || '[]');
+                    wishlist.push(...local);
+                }
+            } else {
+                const local = JSON.parse(localStorage.getItem('tapWishlist') || '[]');
+                wishlist.push(...local);
+            }
+
+            renderOrders();
+            renderWishlist();
+        }
+
+        function titleCaseStatus(s) {
+            const map = {
+                PENDING: 'Pending', CONFIRMED: 'Confirmed',
+                PACKED: 'Packed & Ready', SHIPPED: 'Shipped',
+                OUT_FOR_DELIVERY: 'Out for Delivery',
+                DELIVERED: 'Delivered', CANCELLED: 'Cancelled'
+            };
+            return map[s] || s;
+        }
+            return `₹${Number(value).toFixed(2)}`;
+        
+
+        // Format a stored date string → "DD-Mon-YYYY, HH:MM:SS"
+        function formatOrderDate(raw) {
+            const d = new Date(raw);
+            if (isNaN(d.getTime())) return raw; // fallback: show as-is
+            const dd  = String(d.getDate()).padStart(2, '0');
+            const mon = d.toLocaleString('en-IN', { month: 'short' });
+            const yr  = d.getFullYear();
+            const hh  = String(d.getHours()).padStart(2, '0');
+            const mm  = String(d.getMinutes()).padStart(2, '0');
+            const ss  = String(d.getSeconds()).padStart(2, '0');
+            return `${dd}-${mon}-${yr}, ${hh}:${mm}:${ss}`;
+        }
+
+        function renderOrders() {
+            if (!orders.length) {
+                ordersList.innerHTML = '<div class="empty-state">No orders yet. Place an order from the cart page to see tracking here.</div>';
+                return;
+            }
+
+            // Sort newest first — parse ISO timestamp (stored by Cart.html) or fall back to raw string
+            const sorted = [...orders].sort((a, b) => {
+                const ta = new Date(a.placedAt).getTime();
+                const tb = new Date(b.placedAt).getTime();
+                const va = isNaN(ta) ? 0 : ta;
+                const vb = isNaN(tb) ? 0 : tb;
+                return vb - va; // descending
+            });
+
+            ordersList.innerHTML = sorted.map(order => {
+                // Calculate delivery date: booking date + 5 days
+                const placedMs    = new Date(order.placedAt);
+                const placedTime  = isNaN(placedMs.getTime()) ? Date.now() : placedMs.getTime();
+                const deliveryDate = new Date(placedTime + 5 * 24 * 60 * 60 * 1000);
+                const deliveryDateStr = deliveryDate.toLocaleDateString('en-IN', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric' 
+                });
+
+                // Determine status for badge
+                const status = order.status || 'Pending';
+                const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+
+                // Total item count
+                const totalItems = order.items.reduce((sum, item) => sum + (item.qty || 1), 0);
+                
+                // Preview first 3 items as thumbnails
+                const previewItems = order.items.slice(0, 3);
+                const remainingCount = totalItems - previewItems.length;
+
+                return `
+                    <article class="order-card" onclick="window.location.href='OrderTracking.html?id=${encodeURIComponent(order.id)}'">
+                        <div class="order-card-header">
+                            <div class="order-card-header-left">
+                                <div class="order-card-header-top">
+                                    <p class="order-id">#${order.id}</p>
+                                    <span class="order-status-badge status-${statusClass}">${status}</span>
+                                </div>
+                                <div class="order-meta-row">
+                                    <span class="order-date">Placed: ${formatOrderDate(order.placedAt)}</span>
+                                    <span class="order-delivery-date">
+                                        <span class="icon">📦</span>
+                                        Expected by: ${deliveryDateStr}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="order-total-amount">${formatPrice(order.total)}</div>
+                        </div>
+
+                        <div class="order-items-preview">
+                            ${previewItems.map(item => `
+                                <img class="order-preview-thumb" src="${item.img}" alt="${item.name}" />
+                            `).join('')}
+                            ${remainingCount > 0 ? `
+                                <div class="order-items-count">+${remainingCount} more</div>
+                            ` : ''}
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function flashSuccessButton(button) {
+            if (!button) return;
+            const originalLabel = button.dataset.label || button.textContent.trim() || 'Add to cart';
+            if (!button.dataset.label) {
+                button.dataset.label = originalLabel;
+            }
+            button.classList.add('is-success');
+            button.innerHTML = '<span class="btn-checkmark">✓</span> Added';
+            clearTimeout(button._cartResetTimer);
+            button._cartResetTimer = setTimeout(() => {
+                button.classList.remove('is-success');
+                button.innerHTML = button.dataset.label;
+            }, 900);
+        }
+
+        function saveCart() {
+            localStorage.setItem('tapCart', JSON.stringify(cart));
+            updateCartCount();
+        }
+
+        function updateCartCount() {
+            const count = Object.values(cart).reduce((sum, item) => sum + (item.qty || 0), 0);
+            if (cartCountEl) {
+                cartCountEl.textContent = count;
+            }
+        }
+
+        function addWishlistToCart(item, button) {
+            if (!item) return;
+            if (cart[item.key]) {
+                cart[item.key].qty += 1;
+            } else {
+                cart[item.key] = { ...item, qty: 1 };
+            }
+            saveCart();
+            flashSuccessButton(button);
+        }
+
+        async function removeWishlistItem(itemKey, apiId) {
+            // API remove
+            if (apiId && window.tapApi && window.tapAuth.isLoggedIn()) {
+                try { await window.tapApi.wishlist.toggle(apiId); } catch(e) {}
+            }
+            // Always update localStorage too
+            const updatedWishlist = wishlist.filter(item => item.key !== itemKey);
+            wishlist.splice(0, wishlist.length, ...updatedWishlist);
+            localStorage.setItem('tapWishlist', JSON.stringify(wishlist));
+            renderWishlist();
+        }
+
+        function renderStarsSmall(rating) {
+            const full = Math.floor(rating || 4);
+            const half = ((rating || 4) % 1) >= 0.5 ? 1 : 0;
+            const empty = 5 - full - half;
+            const s = (cls, ch) => `<span class="${cls}">${ch}</span>`;
+            return s('star-full','★').repeat(full) + (half ? s('star-half','★') : '') + s('star-empty','★').repeat(empty);
+        }
+
+        function renderWishlist() {
+            if (!wishlist.length) {
+                wishlistList.innerHTML = '<div class="empty-state">Your wishlist is empty. Add favorites from the home page.</div>';
+                return;
+            }
+
+            wishlistList.innerHTML = wishlist.map(item => `
+                <div class="wishlist-card">
+                    <a class="wishlist-card-img-link" href="ProductDetail.html?key=${encodeURIComponent(item.key)}" aria-label="View ${item.name} details">
+                        <img src="${item.img}" alt="${item.name}" />
+                    </a>
+                    <div class="wishlist-card-info">
+                        <a class="wishlist-card-name-link" href="ProductDetail.html?key=${encodeURIComponent(item.key)}">
+                            <h4>${item.name}</h4>
+                        </a>
+                        <p>${item.category}</p>
+                        <div class="wishlist-rating">
+                            <span class="stars">${renderStarsSmall(item.rating)}</span>
+                            <span class="rating-score">${(item.rating || 4).toFixed(1)}</span>
+                        </div>
+                        <strong>${formatPrice(item.price)}</strong>
+                    </div>
+                    <div class="wishlist-actions">
+                        <button class="wishlist-add-btn" type="button" data-item='${JSON.stringify(item)}'>Add to cart</button>
+                        <button class="wishlist-remove-btn" type="button" data-key="${item.key}" data-apiid="${item._apiId || ''}">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+
+            wishlistList.querySelectorAll('.wishlist-add-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const item = JSON.parse(button.dataset.item);
+                    addWishlistToCart(item, button);
+                });
+            });
+
+            wishlistList.querySelectorAll('.wishlist-remove-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const apiId = button.dataset.apiid ? Number(button.dataset.apiid) : null;
+                    removeWishlistItem(button.dataset.key, apiId);
+                });
+            });
+        }
+
+        function setActiveView(view) {
+            const showOrders = view === 'orders';
+            const showWishlist = view === 'wishlist';
+            const showHelp = view === 'help';
+
+            ordersPanel.classList.toggle('hidden', !showOrders);
+            wishlistPanel.classList.toggle('hidden', !showWishlist);
+            helpPanel.classList.toggle('hidden', !showHelp);
+
+            viewButtons.forEach(button => {
+                button.classList.toggle('active', button.dataset.view === view);
+            });
+        }
+
+        if (cartToggle) {
+            cartToggle.addEventListener('click', () => {
+                window.location.href = './Cart.html';
+            });
+        }
+
+        viewButtons.forEach(button => {
+            button.addEventListener('click', () => setActiveView(button.dataset.view));
+        });
+
+        faqQuestions.forEach(button => {
+            button.addEventListener('click', () => {
+                const card = button.closest('.faq-card');
+                const answer = card?.querySelector('.faq-answer');
+                const isOpen = card?.classList.contains('open');
+
+                document.querySelectorAll('.faq-card').forEach(item => {
+                    item.classList.remove('open');
+                    const itemButton = item.querySelector('.faq-question');
+                    const itemAnswer = item.querySelector('.faq-answer');
+                    itemButton?.setAttribute('aria-expanded', 'false');
+                    itemAnswer?.classList.add('hidden');
+                });
+
+                if (!isOpen) {
+                    card?.classList.add('open');
+                    button.setAttribute('aria-expanded', 'true');
+                    answer?.classList.remove('hidden');
+                }
+            });
+        });
+
+        updateCartCount();
+        // ── Init: load everything from API / localStorage ──────────────────
+        loadAllData();
+        setActiveView('orders');
+    </script>
+
+    <footer class="site-footer">
+        <div class="footer-brand">
+            <span class="footer-badge">✦ Luxury Essentials</span>
+            <h3>9Tails</h3>
+            <p>Curated fashion, accessories, and everyday essentials — delivered with care to your doorstep.</p>
+        </div>
+        <div class="footer-nav">
+            <h4>Quick Links</h4>
+            <a href="Home.html">Home</a>
+            <a href="Orders.html">My Orders</a>
+            <a href="Cart.html">Shopping Bag</a>
+        </div>
+        <div class="footer-address">
+            <h4>Visit Us</h4>
+            <p>9Tails Store</p>
+            <p>BTM, Bangalore, Karnataka</p>
+            <p>India — 560076</p>
+            <p class="footer-contact">✉ hello@9tails.com</p>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 9Tails. All rights reserved.</span>
+            <span>Made with ♥ in Bangalore</span>
+        </div>
+    </footer>
+</body>
+</html>

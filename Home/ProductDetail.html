@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Detail - 9Tails</title>
+    <link rel="stylesheet" href="Home.css" />
+    <link rel="stylesheet" href="ProductDetail.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        window.GOOGLE_CLIENT_ID = '666048447334-1k5fvkaf20e92klpch2n3hg8c29fdqs3.apps.googleusercontent.com';
+        window.GOOGLE_AUTH_ORIGIN = 'http://127.0.0.1:5500';
+    </script>
+</head>
+<body>
+    <div class="main-container">
+
+        <!-- Nav -->
+        <div class="nav-container">
+            <nav class="nav">
+                <div class="nav-brand-row">
+                    <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">☰</button>
+                    <h1>9Tails</h1>
+                </div>
+                <div class="nav-links" id="navLinks">
+                    <ul>
+                        <li><a class="nav-link" href="Home.html">Home</a></li>
+                        <li><a class="nav-link" href="Orders.html">Orders</a></li>
+                        <li>
+                            <button class="cart-toggle" type="button" aria-label="Open cart">
+                                <img src="../Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
+                                <span class="cart-count">0</span>
+                            </button>
+                        </li>
+                        <li><button class="login" type="button">Login</button></li>
+                        <li class="nav-profile hidden">
+                            <button class="profile-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
+                                <img class="profile-photo" src="" alt="Profile photo" />
+                                <span class="profile-name"></span>
+                            </button>
+                            <div class="profile-menu hidden" role="menu" aria-label="User menu">
+                                <div class="profile-menu-card">
+                                    <p class="profile-menu-email"></p>
+                                    <button class="logout-btn" type="button">Logout</button>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+            <div class="breadcrumb-inner">
+                <a href="Home.html">Home</a>
+                <span aria-hidden="true">›</span>
+                <span id="breadcrumbCategory">Category</span>
+                <span aria-hidden="true">›</span>
+                <span id="breadcrumbName" aria-current="page">Product</span>
+            </div>
+        </nav>
+
+        <!-- Product Detail Layout -->
+        <main class="pd-container" id="pdContainer">
+
+            <!-- Left: Image Gallery -->
+            <div class="pd-gallery">
+                <!-- Vertical thumbnail strip -->
+                <div class="pd-thumbnails" id="pdThumbnails" role="list" aria-label="Product image thumbnails"></div>
+
+                <!-- Main image -->
+                <div class="pd-main-image-wrap">
+                    <img class="pd-main-image" id="pdMainImage" src="" alt="Product image" />
+                    <div class="pd-zoom-hint" aria-hidden="true">Click image to zoom</div>
+                </div>
+            </div>
+
+            <!-- Right: Product Info -->
+            <div class="pd-info">
+                <p class="pd-category" id="pdCategory"></p>
+                <h1 class="pd-title" id="pdTitle">Loading…</h1>
+
+                <div class="pd-rating-row" id="pdRatingRow" aria-label="Product rating">
+                    <span class="pd-stars" id="pdStars"></span>
+                    <span class="pd-rating-score" id="pdRatingScore"></span>
+                    <span class="pd-reviews" id="pdReviews"></span>
+                </div>
+
+                <div class="pd-price-row">
+                    <span class="pd-price" id="pdPrice"></span>
+                    <span class="pd-delivery-badge" id="pdDelivery"></span>
+                </div>
+
+                <p class="pd-description" id="pdDescription"></p>
+
+                <div class="pd-stock-row">
+                    <span class="pd-stock-badge" id="pdStock"></span>
+                </div>
+
+                <div class="pd-actions">
+                    <div class="pd-qty-row">
+                        <button class="pd-qty-btn" id="pdQtyDec" aria-label="Decrease quantity">−</button>
+                        <span class="pd-qty-val" id="pdQtyVal" aria-live="polite">1</span>
+                        <button class="pd-qty-btn" id="pdQtyInc" aria-label="Increase quantity">+</button>
+                    </div>
+                    <button class="pd-add-cart-btn" id="pdAddCart" type="button">Add to Cart</button>
+                    <button class="pd-wishlist-btn" id="pdWishlist" type="button" aria-label="Add to wishlist">♥ Wishlist</button>
+                </div>
+
+                <!-- Feature highlights -->
+                <ul class="pd-highlights">
+                    <li><span aria-hidden="true">✦</span> Premium quality, curated by experts</li>
+                    <li><span aria-hidden="true">🚚</span> Free delivery on orders above ₹500</li>
+                    <li><span aria-hidden="true">↩</span> 7-day easy return policy</li>
+                    <li><span aria-hidden="true">🔒</span> Secure checkout — UPI, Cards &amp; COD</li>
+                </ul>
+            </div>
+        </main>
+
+        <!-- Related Products -->
+        <section class="pd-related" id="pdRelatedSection" aria-labelledby="relatedHeading">
+            <div class="pd-related-inner">
+                <div class="section-header-centered">
+                    <span class="section-eyebrow">You Might Also Like</span>
+                    <h2 id="relatedHeading">More from this Category</h2>
+                </div>
+                <div class="pd-related-grid" id="pdRelatedGrid"></div>
+            </div>
+        </section>
+
+    </div><!-- /.main-container -->
+
+    <!-- Image Zoom Lightbox -->
+    <div class="pd-lightbox hidden" id="pdLightbox" role="dialog" aria-modal="true" aria-label="Zoomed product image">
+        <button class="pd-lightbox-close" id="pdLightboxClose" aria-label="Close zoomed image">×</button>
+        <img class="pd-lightbox-img" id="pdLightboxImg" src="" alt="Zoomed product image" />
+    </div>
+
+    <!-- Auth Modal (shared) -->
+    <div class="auth-modal hidden" id="authModal" aria-hidden="true">
+        <div class="auth-card">
+            <button class="auth-close" id="authClose" aria-label="Close authentication dialog">×</button>
+            <div class="auth-brand">
+                <span>9Tails</span>
+                <p>Shop the latest collections with secure access.</p>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-mode="login">Login</button>
+                <button class="auth-tab" data-mode="register">Register</button>
+            </div>
+            <div class="auth-body">
+                <form id="authForm" class="auth-form">
+                    <div class="form-group auth-name-group hidden">
+                        <label for="authFullName">Full Name</label>
+                        <input type="text" id="authFullName" name="authFullName" placeholder="Enter your full name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required />
+                    </div>
+                    <button type="submit" class="auth-submit">Login</button>
+                </form>
+                <div class="auth-footer">
+                    <p class="auth-switch-text">Don't have an account? <button type="button" class="switch-auth" data-mode="register">Register</button></p>
+                </div>
+                <div class="auth-divider"><span>OR</span></div>
+                <button class="google-btn" id="googleSignIn" type="button">Continue with Google</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="pageOverlay"></div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-brand">
+            <span class="footer-badge">Luxury essentials</span>
+            <h3>9Tails</h3>
+            <p>Curated fashion, accessories, and everyday essentials delivered with care.</p>
+        </div>
+        <div class="footer-nav">
+            <h4>Quick links</h4>
+            <a href="Home.html">Home</a>
+            <a href="Orders.html">Orders</a>
+            <a href="Cart.html">Bag</a>
+        </div>
+        <div class="footer-address">
+            <h4>Visit us</h4>
+            <p>9Tails Store</p>
+            <p>BTM, Bangalore, Karnataka</p>
+            <p>India</p>
+            <p>Mail: hello@9tails.com</p>
+        </div>
+    </footer>
+
+    <script>
+        /* ── Nav scroll reveal ── */
+        (function () {
+            var nav = document.querySelector('.nav-container');
+            if (!nav) return;
+            function onScroll() {
+                nav.classList.toggle('nav-scrolled', window.scrollY > 10);
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        })();
+    </script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script src="products-data.js"></script>
+    <script src="ProductDetail.js"></script>
+    <script>
+        const navToggle = document.getElementById('navToggle');
+        const navLinks  = document.getElementById('navLinks');
+        if (navToggle && navLinks) {
+            navToggle.addEventListener('click', () => {
+                const isOpen = navLinks.classList.toggle('open');
+                navToggle.setAttribute('aria-expanded', String(isOpen));
+            });
+        }
+        window.tapAuth.initAuth({
+            loginSelector: '.login',
+            navProfileSelector: '.nav-profile',
+            profileNameSelector: '.profile-name',
+            profilePhotoSelector: '.profile-photo',
+            logoutButtonSelector: '.logout-btn'
+        });
+
+        // Cart icon → Cart page
+        const cartTogglePd = document.querySelector('.cart-toggle');
+        if (cartTogglePd) {
+            cartTogglePd.addEventListener('click', () => {
+                window.location.href = 'Cart.html';
+            });
+        }
+
+        // Mark Home link active since we came from there
+        const homeLink = document.querySelector('.nav-link[href="Home.html"]');
+        if (homeLink) homeLink.classList.add('active');
+    </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Track Order - 9Tails</title>
+    <link rel="stylesheet" href="Home.css" />
+    <link rel="stylesheet" href="OrderTracking.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        window.GOOGLE_CLIENT_ID = '666048447334-1k5fvkaf20e92klpch2n3hg8c29fdqs3.apps.googleusercontent.com';
+        window.GOOGLE_AUTH_ORIGIN = 'http://127.0.0.1:5500';
+    </script>
+</head>
+<body>
+    <div class="main-container">
+        <div class="nav-container">
+            <nav class="nav">
+                <div class="nav-brand-row">
+                    <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">☰</button>
+                    <h1>9Tails</h1>
+                </div>
+                <div class="nav-links" id="navLinks">
+                    <ul>
+                        <li><a class="nav-link" href="Home.html">Home</a></li>
+                        <li><a class="nav-link" href="Orders.html">Orders</a></li>
+                        <li>
+                            <button class="cart-toggle" type="button" aria-label="Open cart">
+                                <img src="../Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
+                                <span class="cart-count">0</span>
+                            </button>
+                        </li>
+                        <li><button class="login" type="button">Login</button></li>
+                        <li class="nav-profile hidden">
+                            <button class="profile-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
+                                <img class="profile-photo" src="" alt="Profile photo" />
+                                <span class="profile-name"></span>
+                            </button>
+                            <div class="profile-menu hidden" role="menu" aria-label="User menu">
+                                <div class="profile-menu-card">
+                                    <p class="profile-menu-email"></p>
+                                    <button class="logout-btn" type="button">Logout</button>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+
+        <div class="products-container">
+            <div class="tracking-page">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="Home.html">Home</a>
+                    <span class="breadcrumb-separator">›</span>
+                    <a href="Orders.html">Orders</a>
+                    <span class="breadcrumb-separator">›</span>
+                    <span class="breadcrumb-current" id="breadcrumbOrderId">Track Order</span>
+                </nav>
+
+                <!-- Order Header -->
+                <section class="tracking-header">
+                    <div class="tracking-header-left">
+                        <h2 class="tracking-title">Order <span id="orderIdDisplay"></span></h2>
+                        <div class="tracking-meta">
+                            <span class="tracking-meta-item">
+                                <strong>Placed:</strong> <span id="orderPlacedDate"></span>
+                            </span>
+                            <span class="tracking-meta-item">
+                                <strong>Expected:</strong> <span id="orderExpectedDate"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="tracking-header-right">
+                        <span class="tracking-status-badge" id="orderStatusBadge"></span>
+                    </div>
+                </section>
+
+                <!-- Delivery illustration banner -->
+                <section class="tracking-delivery-banner">
+                    <div class="delivery-banner-content">
+                        <div class="delivery-banner-text">
+                            <span class="delivery-banner-eyebrow">Live Tracking</span>
+                            <h3 class="delivery-banner-title">Your order is on its way!</h3>
+                            <p class="delivery-banner-sub">We'll keep you updated every step of the journey.</p>
+                        </div>
+                        <div class="delivery-banner-img-wrap">
+                            <img
+                                src="../Assets/Orders/Shipping.png"
+                                alt="Delivery illustration"
+                                class="delivery-banner-img"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Timeline — steps are built dynamically by OrderTracking.js -->
+                <section class="tracking-timeline-section">
+                    <h3>Shipping Progress</h3>
+                    <div class="tracking-timeline" id="trackingTimeline">
+                        <div class="timeline-progress-bar" id="timelineProgressBar"></div>
+                    </div>
+                </section>
+
+                <!-- Order Details -->
+                <section class="tracking-order-details">
+                    <div class="tracking-details-grid">
+                        <!-- Products List -->
+                        <div class="tracking-products-card">
+                            <h3>Order Items</h3>
+                            <div class="tracking-products-list" id="trackingProductsList"></div>
+                            <div class="tracking-order-summary">
+                                <div class="summary-row">
+                                    <span>Subtotal:</span>
+                                    <strong id="orderSubtotal"></strong>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Delivery:</span>
+                                    <strong id="orderDelivery"></strong>
+                                </div>
+                                <div class="summary-row summary-total">
+                                    <span>Total:</span>
+                                    <strong id="orderTotal"></strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Address -->
+                        <div class="tracking-address-card">
+                            <h3>Delivery Address</h3>
+                            <div class="tracking-address-content" id="trackingAddress"></div>
+                        </div>
+
+                        <!-- Payment Info -->
+                        <div class="tracking-payment-card">
+                            <h3>Payment Method</h3>
+                            <div class="tracking-payment-content" id="trackingPayment"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Cancel Order Section (shown only if status is not Delivered/Cancelled) -->
+                <section class="tracking-action-section" id="cancelSection">
+                    <div class="action-card cancel-card">
+                        <div class="action-card-header">
+                            <h3>Cancel Order</h3>
+                            <p>You can cancel this order before it's dispatched for delivery.</p>
+                        </div>
+                        <button class="action-btn cancel-btn" id="cancelOrderBtn" type="button">
+                            Cancel Order
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Return/Exchange Section (shown only if status is Delivered) -->
+                <section class="tracking-action-section hidden" id="returnExchangeSection">
+                    <div class="action-cards-grid">
+                        <div class="action-card return-card">
+                            <div class="action-card-header">
+                                <h3>Return Order</h3>
+                                <p>Not satisfied? Return within 7 days of delivery for a full refund.</p>
+                            </div>
+                            <button class="action-btn return-btn" id="returnOrderBtn" type="button">
+                                Request Return
+                            </button>
+                        </div>
+                        <div class="action-card exchange-card">
+                            <div class="action-card-header">
+                                <h3>Exchange Order</h3>
+                                <p>Want a different size or color? Exchange within 7 days of delivery.</p>
+                            </div>
+                            <button class="action-btn exchange-btn" id="exchangeOrderBtn" type="button">
+                                Request Exchange
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="pageOverlay"></div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal hidden" id="confirmModal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Confirm Action</h3>
+            <p id="modalMessage">Are you sure you want to proceed?</p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-cancel" id="modalCancel" type="button">Cancel</button>
+                <button class="modal-btn modal-confirm" id="modalConfirm" type="button">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ── Nav scroll reveal ── */
+        (function () {
+            var nav = document.querySelector('.nav-container');
+            if (!nav) return;
+            function onScroll() {
+                nav.classList.toggle('nav-scrolled', window.scrollY > 10);
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        })();
+    </script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script src="OrderTracking.js"></script>
+        <div class="footer-brand">
+            <span class="footer-badge">✦ Luxury Essentials</span>
+            <h3>9Tails</h3>
+            <p>Curated fashion, accessories, and everyday essentials — delivered with care to your doorstep.</p>
+        </div>
+        <div class="footer-nav">
+            <h4>Quick Links</h4>
+            <a href="Home.html">Home</a>
+            <a href="Orders.html">My Orders</a>
+            <a href="Cart.html">Shopping Bag</a>
+        </div>
+        <div class="footer-address">
+            <h4>Visit Us</h4>
+            <p>9Tails Store</p>
+            <p>BTM, Bangalore, Karnataka</p>
+            <p>India — 560076</p>
+            <p class="footer-contact">✉ hello@9tails.com</p>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 9Tails. All rights reserved.</span>
+            <span>Made with ♥ in Bangalore</span>
+        </div>
+    </footer>
+</body>
+</html>
