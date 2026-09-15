@@ -1,98 +1,91 @@
 param()
 
-$ROOT     = "d:\Tap Projects\Ecommerce"
-$BACKEND  = "$ROOT\backend"
-$API_URL  = "http://localhost:8081/api/products?page=0&size=1"
-$APP_URL  = "http://127.0.0.1:5500/Home/Home.html"
-$FRONTEND = "$ROOT\Home\Home.html"
+$BACKEND      = "d:\Tap Projects\Ecommerce\backend"
+$FRONTEND_DIR = "d:\Tap Projects\Ecommerce\Home"
+$API_URL      = "http://localhost:8081/api/products?page=0&size=1"
+$APP_URL      = "http://localhost:5500/Home.html"
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "   9Tails Ecommerce - Starting Up         " -ForegroundColor Cyan
+Write-Host "  9Tails Ecommerce - Starting Up          " -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Check MySQL
-$mysql = Get-Service -Name "MySQL80" -ErrorAction SilentlyContinue
-if ($mysql -and $mysql.Status -eq "Running") {
-    Write-Host "[OK] MySQL is running" -ForegroundColor Green
+Write-Host "[1/5] MySQL..." -ForegroundColor Yellow
+$svc = Get-Service -Name "MySQL80" -ErrorAction SilentlyContinue
+if ($svc -and $svc.Status -eq "Running") {
+    Write-Host "      OK - running" -ForegroundColor Green
 } else {
-    Write-Host "[STARTING] MySQL80..." -ForegroundColor Yellow
     Start-Service "MySQL80" -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 4
-    Write-Host "[OK] MySQL started" -ForegroundColor Green
+    Write-Host "      OK - started" -ForegroundColor Green
 }
 
-# 2. Kill anything on port 8081
-$existing = Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
-if ($existing) {
-    $pid8081 = $existing.OwningProcess
-    Write-Host "[INFO] Stopping process on port 8081 (PID $pid8081)..." -ForegroundColor Yellow
-    Stop-Process -Id $pid8081 -Force -ErrorAction SilentlyContinue
+Write-Host "[2/5] Port 8081..." -ForegroundColor Yellow
+$p1 = Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
+if ($p1) {
+    Stop-Process -Id $p1.OwningProcess -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
-    Write-Host "[OK] Port 8081 cleared" -ForegroundColor Green
+    Write-Host "      OK - cleared" -ForegroundColor Green
 } else {
-    Write-Host "[OK] Port 8081 is free" -ForegroundColor Green
+    Write-Host "      OK - free" -ForegroundColor Green
 }
 
-# 3. Launch Spring Boot in a new terminal window
+Write-Host "[3/5] Port 5500..." -ForegroundColor Yellow
+$p2 = Get-NetTCPConnection -LocalPort 5500 -State Listen -ErrorAction SilentlyContinue
+if ($p2) {
+    Stop-Process -Id $p2.OwningProcess -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+    Write-Host "      OK - cleared" -ForegroundColor Green
+} else {
+    Write-Host "      OK - free" -ForegroundColor Green
+}
+
+Write-Host "[4/5] Starting Spring Boot on :8081..." -ForegroundColor Yellow
+Start-Process "cmd.exe" -ArgumentList "/k cd /d `"$BACKEND`" && mvn spring-boot:run" -WorkingDirectory $BACKEND
+Write-Host "      Backend window opened" -ForegroundColor Green
+
+Write-Host "[5/5] Starting Python HTTP server on :5500..." -ForegroundColor Yellow
+Start-Process "cmd.exe" -ArgumentList "/k python -m http.server 5500" -WorkingDirectory $FRONTEND_DIR
+Write-Host "      Frontend server window opened" -ForegroundColor Green
+
 Write-Host ""
-Write-Host "[STARTING] Launching Spring Boot backend..." -ForegroundColor Cyan
-
-$mvnCmd = "cd /d `"$BACKEND`" && mvn spring-boot:run"
-$proc = Start-Process "cmd.exe" -ArgumentList "/k $mvnCmd" -WorkingDirectory $BACKEND -PassThru
-
-Write-Host "[OK] Spring Boot window opened (PID $($proc.Id))" -ForegroundColor Green
-
-# 4. Poll until backend responds
-Write-Host ""
-Write-Host "[WAITING] Waiting for backend on port 8081 (max 90s)..." -ForegroundColor Yellow
-
+Write-Host "Waiting for backend to be ready..." -ForegroundColor Cyan
 $waited = 0
-$ready  = $false
-
+$ready = $false
+$ErrorActionPreference = "SilentlyContinue"
 while ($waited -lt 90) {
     Start-Sleep -Seconds 4
-    $waited += 4
-    $resp = $null
-    try {
-        $resp = Invoke-WebRequest -Uri $API_URL -UseBasicParsing -TimeoutSec 4
-    } catch {
-        $resp = $null
-    }
-    if ($resp -and $resp.StatusCode -eq 200) {
+    $waited = $waited + 4
+    $r = $null
+    $r = Invoke-WebRequest -Uri $API_URL -UseBasicParsing -TimeoutSec 3 2>$null
+    if ($r -and ($r.StatusCode -eq 200)) {
         $ready = $true
         break
     }
-    Write-Host "  ...waiting ($waited`s)" -ForegroundColor DarkGray
+    Write-Host "  still starting... (${waited}s)" -ForegroundColor DarkGray
 }
+$ErrorActionPreference = "Continue"
 
-if ($ready) {
-    Write-Host "[OK] Backend is UP - API responding with data!" -ForegroundColor Green
+if ($ready -eq $true) {
+    Write-Host "  Backend is UP!" -ForegroundColor Green
 } else {
-    Write-Host "[WARN] Backend not responding yet - check the Spring Boot window for errors" -ForegroundColor Yellow
+    Write-Host "  Backend slow - check the Spring Boot window" -ForegroundColor Yellow
 }
 
-# 5. Open frontend
-Write-Host ""
-Write-Host "[OPENING] Frontend in browser..." -ForegroundColor Cyan
+Start-Sleep -Seconds 1
+Start-Process $APP_URL 2>$null
 
-# Try Live Server URL first, then raw file
-try {
-    Start-Process $APP_URL
-} catch {
-    Start-Process $FRONTEND
-}
-
-# 6. Summary
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " 9Tails is running!" -ForegroundColor Green
+Write-Host "  All systems running!" -ForegroundColor Green
 Write-Host ""
-Write-Host " Backend API  : http://localhost:8081/api" -ForegroundColor White
-Write-Host " Frontend     : $APP_URL" -ForegroundColor White
-Write-Host " Admin login  : admin@9tails.com / Admin@123" -ForegroundColor White
+Write-Host "  Backend  : http://localhost:8081/api" -ForegroundColor White
+Write-Host "  Frontend : http://localhost:5500/Home.html" -ForegroundColor White
+Write-Host "  Admin    : admin@9tails.com / Admin@123" -ForegroundColor White
 Write-Host ""
-Write-Host " To stop backend: close the Spring Boot window or Ctrl+C in it" -ForegroundColor DarkGray
+Write-Host "  Two CMD windows are open:" -ForegroundColor DarkGray
+Write-Host "    - Spring Boot (close to stop API)" -ForegroundColor DarkGray
+Write-Host "    - Python HTTP server (close to stop frontend)" -ForegroundColor DarkGray
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
