@@ -27,7 +27,7 @@
                         <li><a class="nav-link active" href="Orders.html">Orders</a></li>
                         <li>
                             <button class="cart-toggle" type="button" aria-label="Open cart">
-                                <img src="../Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
+                                <img src="Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
                                 <span class="cart-count">0</span>
                             </button>
                         </li>
@@ -97,7 +97,7 @@
                                     </div>
                                 </div>
                                 <div class="help-banner-img-wrap">
-                                    <img src="../Assets/Orders/Help Line.png" alt="Customer support illustration" class="help-banner-img" />
+                                    <img src="Assets/Orders/Help Line.png" alt="Customer support illustration" class="help-banner-img" />
                                 </div>
                             </div>
                         </div>
@@ -376,8 +376,15 @@
             };
             return map[s] || s;
         }
+
+        function formatPrice(value) {
             return `₹${Number(value).toFixed(2)}`;
-        
+        }
+
+        // Normalize image path for Python root server (strip leading ../)
+        function imgPath(p) {
+            return (p || '').replace(/^\.\.\//, '');
+        }
 
         // Format a stored date string → "DD-Mon-YYYY, HH:MM:SS"
         function formatOrderDate(raw) {
@@ -450,7 +457,7 @@
 
                         <div class="order-items-preview">
                             ${previewItems.map(item => `
-                                <img class="order-preview-thumb" src="${item.img}" alt="${item.name}" />
+                                <img class="order-preview-thumb" src="${imgPath(item.img)}" alt="${item.name}" />
                             `).join('')}
                             ${remainingCount > 0 ? `
                                 <div class="order-items-count">+${remainingCount} more</div>
@@ -527,11 +534,11 @@
 
             wishlistList.innerHTML = wishlist.map(item => `
                 <div class="wishlist-card">
-                    <a class="wishlist-card-img-link" href="ProductDetail.html?key=${encodeURIComponent(item.key)}" aria-label="View ${item.name} details">
-                        <img src="${item.img}" alt="${item.name}" />
+                    <a class="wishlist-card-img-link" href="ProductDetail.html?id=${encodeURIComponent(item.key)}" aria-label="View ${item.name} details">
+                        <img src="${imgPath(item.img)}" alt="${item.name}" />
                     </a>
                     <div class="wishlist-card-info">
-                        <a class="wishlist-card-name-link" href="ProductDetail.html?key=${encodeURIComponent(item.key)}">
+                        <a class="wishlist-card-name-link" href="ProductDetail.html?id=${encodeURIComponent(item.key)}">
                             <h4>${item.name}</h4>
                         </a>
                         <p>${item.category}</p>

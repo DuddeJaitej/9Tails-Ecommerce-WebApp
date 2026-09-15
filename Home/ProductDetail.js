@@ -8,6 +8,11 @@
         return '₹' + Number(n).toLocaleString('en-IN');
     }
 
+    // Normalize image path — strip leading ../ for Python root server
+    function imgPath(p) {
+        return (p || '').replace(/^\.\.\//, '');
+    }
+
     function renderStars(rating) {
         const full  = Math.floor(rating);
         const half  = (rating % 1) >= 0.5 ? 1 : 0;
@@ -135,7 +140,7 @@
     const thumbnailsEl = qs('#pdThumbnails');
 
     // Show only the one main product image
-    const singleImg = product.img || '';
+    const singleImg = imgPath(product.img || '');
     if (mainImageEl) {
         mainImageEl.src = singleImg;
         mainImageEl.alt = product.name;
@@ -278,7 +283,7 @@
                      data-key="${p.key}"
                      role="button" tabindex="0"
                      aria-label="View ${p.name} details">
-                    <img src="${p.img}" alt="${p.name}" />
+                    <img src="${imgPath(p.img)}" alt="${p.name}" />
                     <div class="product-overlay-label">View Details</div>
                 </div>
                 <div class="product-info">

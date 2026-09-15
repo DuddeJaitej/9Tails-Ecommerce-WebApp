@@ -12,13 +12,13 @@ async function loadProductsFromApi() {
         const page = await window.tapApi.products.list(0, 200, 'newest');
         if (page && page.content && page.content.length > 0) {
             products = page.content.map(p => ({
-                key:         String(p.id),          // numeric DB id as string key
-                id:          p.id,                  // numeric — used for API cart calls
+                key:         String(p.id),
+                id:          p.id,
                 name:        p.name,
                 description: p.description || '',
                 category:    p.categoryName,
-                img:         p.imageUrl || '',
-                gallery:     p.galleryImages || [],  // array from API
+                img:         (p.imageUrl || '').replace(/^\.\.\//, ''),
+                gallery:     p.galleryImages || [],
                 price:       Number(p.price),
                 originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
                 rating:      p.rating || 4.0,
@@ -242,7 +242,7 @@ function mapApiProduct(p) {
         name:         p.name,
         description:  p.description || '',
         category:     p.categoryName,
-        img:          p.imageUrl || '',
+        img:          (p.imageUrl || '').replace(/^\.\.\//, ''),
         gallery:      p.galleryImages || [],
         price:        Number(p.price),
         originalPrice: p.originalPrice ? Number(p.originalPrice) : null,

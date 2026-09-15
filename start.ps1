@@ -1,9 +1,9 @@
 param()
 
-$BACKEND      = "d:\Tap Projects\Ecommerce\backend"
-$FRONTEND_DIR = "d:\Tap Projects\Ecommerce\Home"
+$ROOT         = "d:\Tap Projects\Ecommerce"
+$BACKEND      = "$ROOT\backend"
 $API_URL      = "http://localhost:8081/api/products?page=0&size=1"
-$APP_URL      = "http://localhost:5500/Home.html"
+$APP_URL      = "http://localhost:5500/Home/Home.html"
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
@@ -45,9 +45,9 @@ Write-Host "[4/5] Starting Spring Boot on :8081..." -ForegroundColor Yellow
 Start-Process "cmd.exe" -ArgumentList "/k cd /d `"$BACKEND`" && mvn spring-boot:run" -WorkingDirectory $BACKEND
 Write-Host "      Backend window opened" -ForegroundColor Green
 
-Write-Host "[5/5] Starting Python HTTP server on :5500..." -ForegroundColor Yellow
-Start-Process "cmd.exe" -ArgumentList "/k python -m http.server 5500" -WorkingDirectory $FRONTEND_DIR
-Write-Host "      Frontend server window opened" -ForegroundColor Green
+Write-Host "[5/5] Starting frontend server on :5500..." -ForegroundColor Yellow
+Start-Process "cmd.exe" -ArgumentList "/k python -m http.server 5500" -WorkingDirectory $ROOT
+Write-Host "      Frontend served from project root (Assets + Home both accessible)" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Waiting for backend to be ready..." -ForegroundColor Cyan
@@ -58,7 +58,7 @@ while ($waited -lt 90) {
     Start-Sleep -Seconds 4
     $waited = $waited + 4
     $r = $null
-    $r = Invoke-WebRequest -Uri $API_URL -UseBasicParsing -TimeoutSec 3 2>$null
+    $r = Invoke-WebRequest -Uri $API_URL -UseBasicParsing -TimeoutSec 3
     if ($r -and ($r.StatusCode -eq 200)) {
         $ready = $true
         break
@@ -81,11 +81,7 @@ Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "  All systems running!" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Backend  : http://localhost:8081/api" -ForegroundColor White
-Write-Host "  Frontend : http://localhost:5500/Home.html" -ForegroundColor White
+Write-Host "  Frontend : http://localhost:5500/Home/Home.html" -ForegroundColor White
 Write-Host "  Admin    : admin@9tails.com / Admin@123" -ForegroundColor White
-Write-Host ""
-Write-Host "  Two CMD windows are open:" -ForegroundColor DarkGray
-Write-Host "    - Spring Boot (close to stop API)" -ForegroundColor DarkGray
-Write-Host "    - Python HTTP server (close to stop frontend)" -ForegroundColor DarkGray
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""

@@ -68,6 +68,9 @@
     /* ── Helpers ── */
     const fmt = function(v) { return '₹' + Number(v || 0).toFixed(2); };
 
+    // Normalize image path — strip leading ../ for Python root server
+    function imgPath(p) { return (p || '').replace(/^\.\.\//, ''); }
+
     function fmtDate(d) {
         var p = new Date(d);
         if (isNaN(p.getTime())) return String(d);
@@ -325,7 +328,7 @@
                     return (
                         '<div class="ot-product-row" data-idx="' + idx + '">' +
                             '<div class="ot-product-main">' +
-                                '<img src="' + (item.img || '') + '" alt="' + (item.name || '') + '" class="ot-product-thumb" />' +
+                                '<img src="' + imgPath(item.img || '') + '" alt="' + (item.name || '') + '" class="ot-product-thumb" />' +
                                 '<div class="ot-product-info">' +
                                     '<strong>' + (item.name || 'Product') + '</strong>' +
                                     '<span>' + (item.category || '') + '</span>' +
