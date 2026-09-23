@@ -28,11 +28,20 @@ Production-level REST API built with Spring Boot 3, Hibernate JPA, MySQL, and JW
 
 ## Step-by-Step Setup
 
-### Step 1 — Run SQL in MySQL Workbench
+### Step 1 — Configure credentials and run SQL
+
+Set the backend credentials in the shell before starting the application:
+
+```powershell
+$env:DB_PASSWORD = "your-local-mysql-password"
+$env:JWT_SECRET = "a-long-random-secret-at-least-32-characters"
+```
+
+Never commit real database passwords or production JWT secrets.
 
 1. Open **MySQL Workbench** and connect to `localhost` using:
    - Username: `root`
-   - Password: `Jai1421tej@333`
+  - Password: the value configured in `DB_PASSWORD`
 2. Open the file: `database/schema.sql`
 3. Click **Run (⚡)** — this will:
    - Create the `nintails_ecommerce` database
@@ -54,7 +63,7 @@ mvn clean package -DskipTests
 java -jar target/ecommerce-1.0.0.jar
 ```
 
-The server starts at: **http://localhost:8080/api**
+The server starts at: **http://localhost:8081/api**
 
 ---
 

@@ -1,6 +1,15 @@
 // products array — loaded from API (with products-data.js as fallback)
 let products = (typeof window._productsData !== 'undefined') ? window._productsData : [];
 
+// Make image path absolute so it resolves from server root regardless of page location
+// e.g. "Assets/Products/x.jpg" → "/Assets/Products/x.jpg"
+function imgFix(p) {
+    if (!p) return '';
+    p = String(p).replace(/^\.\.\//, '');
+    if (!p.startsWith('/') && !p.startsWith('http')) p = '/' + p;
+    return p;
+}
+
 /**
  * Load products from Spring Boot API.
  * Maps ProductDto → the shape used by renderProducts():
