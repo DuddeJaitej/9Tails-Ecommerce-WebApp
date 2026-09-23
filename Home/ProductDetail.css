@@ -870,3 +870,67 @@
     .trust-inner { gap: 16px; }
     .trust-item { min-width: 100px; }
 }
+
+@media (max-width: 640px) {
+    .categories-section,
+    .deals-section,
+    .testimonials-section,
+    .trust-section {
+        padding-left: 5%;
+        padding-right: 5%;
+    }
+
+    .section-header-centered h2 {
+        font-size: 1.8rem;
+    }
+
+    .categories-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .cat-card {
+        border-radius: 16px;
+    }
+
+    .cat-card-label {
+        bottom: 9px;
+        font-size: 0.68rem;
+        padding: 0 5px;
+    }
+
+    .deals-card {
+        min-height: 270px;
+        padding: 22px;
+        border-radius: 22px;
+    }
+
+    .deals-card-text p {
+        font-size: 0.84rem;
+        margin-bottom: 16px;
+    }
+
+    .testimonials-grid {
+        gap: 14px;
+    }
+
+    .testimonial-card {
+        padding: 20px;
+        border-radius: 20px;
+    }
+
+    .trust-section {
+        padding-top: 30px;
+        padding-bottom: 30px;
+    }
+
+    .trust-inner {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 22px 12px;
+    }
+
+    .trust-item {
+        min-width: 0;
+    }
+}

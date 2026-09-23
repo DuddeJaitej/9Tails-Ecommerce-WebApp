@@ -945,3 +945,30 @@
     .help-banner-badges { gap: 6px; }
     .help-badge { font-size: 0.72rem; padding: 5px 11px; }
 }
+
+@media (max-width: 640px) {
+    .orders-panel,
+    .wishlist-panel,
+    .help-panel {
+        padding: 18px;
+        border-radius: 20px;
+    }
+
+    .view-toggle {
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        scrollbar-width: none;
+    }
+
+    .view-toggle::-webkit-scrollbar {
+        display: none;
+    }
+
+    .view-toggle-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 10px 16px;
+    }
+}
