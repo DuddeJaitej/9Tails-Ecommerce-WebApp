@@ -113,6 +113,33 @@ Ecommerce/
 - Maven 3.9+
 - MySQL 8+
 - Python 3 (used by `start.ps1` for the static frontend server)
+- Git
+
+## Download From GitHub
+
+### Clone with Git
+
+Open PowerShell or a terminal and run:
+
+```powershell
+git clone https://github.com/DuddeJaitej/9Tails-Ecommerce-WebApp.git
+cd 9Tails-Ecommerce-WebApp
+```
+
+To download the latest changes later:
+
+```powershell
+git pull origin main
+```
+
+### Download as ZIP
+
+1. Open the [GitHub repository](https://github.com/DuddeJaitej/9Tails-Ecommerce-WebApp).
+2. Select **Code**, then choose **Download ZIP**.
+3. Extract the ZIP file.
+4. Open the extracted `9Tails-Ecommerce-WebApp` folder in VS Code.
+
+Git is recommended because it makes future updates easier with `git pull`.
 
 ## Configuration
 
@@ -127,26 +154,71 @@ Never commit real passwords, API keys, or production JWT secrets. The checked-in
 
 ## Running Locally
 
-### 1. Database
-Run `backend/database/schema.sql` in MySQL Workbench. The application also uses JPA `ddl-auto=update` to keep tables synchronized after the database exists.
+### 1. Configure MySQL
 
-### 2. Backend
+Make sure MySQL is running and execute `backend/database/schema.sql` in MySQL Workbench. The script creates the `nintails_ecommerce` database, tables, sample products, and the admin account.
+
+The backend uses these database settings:
+
+| Setting | Value |
+|---------|-------|
+| Host | `localhost:3306` |
+| Database | `nintails_ecommerce` |
+| Username | `root` |
+| Password | `$env:DB_PASSWORD` |
+
+The application also uses JPA `ddl-auto=update` to keep tables synchronized after the database exists.
+
+### 2. Set environment variables
+
+Run these commands in PowerShell before starting the backend. Replace the values with your local settings:
+
+```powershell
+$env:DB_PASSWORD = "your-local-mysql-password"
+$env:JWT_SECRET = "a-long-random-secret-at-least-32-characters"
+```
+
+If your local MySQL `root` account has no password, use:
+
+```powershell
+$env:DB_PASSWORD = ""
+```
+
+### 3. Start the backend
+
 ```bash
 cd backend
 mvn spring-boot:run
 ```
-API runs at: `http://localhost:8081/api`
 
-### 3. Frontend
-From the repository root, serve the project so both `Home/` and `Assets/` resolve correctly:
+The API runs at `http://localhost:8081/api`.
+
+### 4. Start the frontend
+
+Open a second terminal in the project root and serve the static files so both `Home/` and `Assets/` resolve correctly:
 
 ```bash
 python -m http.server 5500
 ```
 
-Open `http://localhost:5500/Home/Home.html`.
+Open `http://localhost:5500/Home/Home.html` in a browser. Do not open the HTML file directly with `file://`, because the frontend needs a web server for images and API requests.
 
-On Windows, `./start.ps1` starts MySQL, the backend, and the frontend together. The script assumes MySQL service `MySQL80` and the repository path configured in the script.
+### 5. Start everything on Windows
+
+After setting the environment variables, run this from the project root:
+
+```powershell
+.\start.ps1
+```
+
+The script starts the MySQL service, Spring Boot on port `8081`, and the frontend on port `5500`. It works from any cloned repository location.
+
+If PowerShell blocks local scripts, run:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\start.ps1
+```
 
 ## Application URLs
 

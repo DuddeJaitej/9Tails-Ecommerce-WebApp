@@ -1,6 +1,6 @@
 param()
 
-$ROOT         = "d:\Tap Projects\Ecommerce"
+$ROOT         = $PSScriptRoot
 $BACKEND      = "$ROOT\backend"
 $API_URL      = "http://localhost:8081/api/products?page=0&size=1"
 $APP_URL      = "http://localhost:5500/Home/Home.html"
