@@ -1,5 +1,18 @@
 // products array — loaded from API (with products-data.js as fallback)
-let products = (typeof window._productsData !== 'undefined') ? window._productsData : [];
+let products = (typeof window._productsData !== 'undefined')
+    ? window._productsData.map(normalizeProduct)
+    : [];
+let productsFromApi = false;
+
+function normalizeProduct(product) {
+    return {
+        ...product,
+        key: String(product.key ?? product.id),
+        id: product.id ?? product.key,
+        img: imgFix(product.img),
+        gallery: (product.gallery || []).map(imgFix)
+    };
+}
 
 // Make image path absolute so it resolves from server root regardless of page location
 // e.g. "Assets/Products/x.jpg" → "/Assets/Products/x.jpg"
@@ -27,6 +40,7 @@ async function loadProductsFromApi() {
         const page = await window.tapApi.products.list(0, 200, 'newest');
         const content = getProductContent(page);
         if (content.length > 0) {
+            productsFromApi = true;
             products = content.map(p => ({
                 key:         String(p.id),
                 id:          p.id,
@@ -165,7 +179,8 @@ function openProductDetail(productKey) {
 function getFilteredProducts() {
     return products
         .filter(product => {
-            const categoryMatch = currentCategory === 'All' || product.category === currentCategory;
+            const categoryMatch = currentCategory === 'All' ||
+                String(product.category || '').toLowerCase() === currentCategory.toLowerCase();
             const stockMatch = !filters.inStock || product.inStock;
             const deliveryMatch = !filters.fastDelivery || product.fastDelivery;
             let priceMatch = true;
@@ -192,7 +207,7 @@ function renderProducts() {
         const rating = product.rating || 4.0;
         const reviews = product.reviews || 0;
         return `
-        <article class="product-card" data-id="${productKey}">
+            <article class="product-card" data-id="${productKey}">
             <div class="product-image-wrap product-image-clickable" data-id="${productKey}" role="button" tabindex="0" aria-label="View ${product.name} details">
                 <img src="${imgFix(product.img)}" alt="${product.name}" />
                 <div class="product-overlay-label">View Details</div>
@@ -451,7 +466,9 @@ categoryButtons.forEach(button => {
         currentCategory = button.dataset.category;
 
         // If products came from API, filter server-side for accuracy
-        if (products.length > 0 && products[0].id) {
+        renderProducts();
+
+        if (productsFromApi && products.length > 0 && products[0].id) {
             try {
                 if (currentCategory === 'All') {
                     const page = await window.tapApi.products.list(0, 200, sortBy === 'low' ? 'price-low' : sortBy === 'high' ? 'price-high' : 'newest');
@@ -460,9 +477,9 @@ categoryButtons.forEach(button => {
                     const page = await window.tapApi.products.byCategory(currentCategory, 0, 200, 'newest');
                     products = getProductContent(page).map(mapApiProduct);
                 }
-            } catch(e) { /* keep current products array */ }
+                renderProducts();
+            } catch(e) { /* keep the immediately rendered catalog */ }
         }
-        renderProducts();
     });
 });
 

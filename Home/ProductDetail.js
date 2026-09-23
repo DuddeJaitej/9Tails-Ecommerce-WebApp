@@ -1,6 +1,8 @@
 // ProductDetail.js — handles image gallery, add-to-cart, wishlist, related products
 
 (function () {
+    const qs = selector => document.querySelector(selector);
+
     // Normalize image path — make absolute so it always resolves from server root
     // API returns "Assets/Products/..." → we need "/Assets/Products/..."
     function imgFix(p) {
@@ -78,7 +80,13 @@
         }
 
         // ── Fallback: products-data.js by key ──────────────────────────────
-        const localProducts = window._productsData || [];
+        const localProducts = (window._productsData || []).map(p => ({
+            ...p,
+            key: String(p.key ?? p.id),
+            id: p.id ?? p.key,
+            img: imgFix(p.img),
+            gallery: (p.gallery || []).map(imgFix)
+        }));
 
         if (!product && productKey) {
             const local = localProducts.find(p => p.key === productKey);
@@ -145,6 +153,7 @@
 
     // Show only the one main product image
     const singleImg = imgFix(product.img || '');
+    const gallery = [singleImg].filter(Boolean);
     if (mainImageEl) {
         mainImageEl.src = singleImg;
         mainImageEl.alt = product.name;
@@ -162,12 +171,14 @@
     const lightboxImg    = qs('#pdLightboxImg');
     const lightboxClose  = qs('#pdLightboxClose');
 
-    mainImageEl.addEventListener('click', () => {
-        lightboxImg.src = gallery[activeIndex];
-        lightbox.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        lightboxClose.focus();
-    });
+    if (mainImageEl && lightbox && lightboxImg && lightboxClose && gallery.length) {
+        mainImageEl.addEventListener('click', () => {
+            lightboxImg.src = gallery[0];
+            lightbox.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            lightboxClose.focus();
+        });
+    }
 
     function closeLightbox() {
         lightbox.classList.add('hidden');
@@ -175,13 +186,11 @@
         mainImageEl.focus();
     }
 
-    lightboxClose.addEventListener('click', closeLightbox);
-    lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+    if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+    if (lightbox) lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
     document.addEventListener('keydown', e => {
         if (!lightbox.classList.contains('hidden')) {
             if (e.key === 'Escape') closeLightbox();
-            if (e.key === 'ArrowRight') setActiveImage((activeIndex + 1) % gallery.length);
-            if (e.key === 'ArrowLeft')  setActiveImage((activeIndex - 1 + gallery.length) % gallery.length);
         }
     });
 
@@ -274,11 +283,15 @@
     // ── Related products — use API data if available, else local filter ──────
     const relatedGrid = qs('#pdRelatedGrid');
     // API stores related in window._relatedProducts; fallback to local filter
+    const localProducts = (window._productsData || []).map(p => ({
+        ...p,
+        key: String(p.key ?? p.id),
+        id: p.id ?? p.key,
+        img: imgFix(p.img)
+    }));
     const related = (window._relatedProducts && window._relatedProducts.length > 0)
         ? window._relatedProducts.slice(0, 4)
-        : (typeof products !== 'undefined'
-            ? products.filter(p => p.category === product.category && p.key !== product.key).slice(0, 4)
-            : []);
+        : localProducts.filter(p => p.category === product.category && p.key !== product.key).slice(0, 4);
 
     if (related.length) {
         relatedGrid.innerHTML = related.map(p => `
@@ -310,7 +323,7 @@
         `).join('');
 
         // Navigate to product detail — use numeric id if available
-        relatedGrid.querySelectorAll('[data-key]').forEach(el => {
+        relatedGrid.querySelectorAll('.product-image-clickable, .product-info-text').forEach(el => {
             const handler = () => {
                 const k = el.dataset.key;
                 const isNumeric = /^\d+$/.test(String(k));

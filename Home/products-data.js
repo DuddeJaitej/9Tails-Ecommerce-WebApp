@@ -644,6 +644,6 @@ window._productsData = [
 ];
 
 // Assign unique keys to each product
-products.forEach((product, index) => {
+window._productsData.forEach((product, index) => {
     product.key = `${product.id}-${index}`;
 });
