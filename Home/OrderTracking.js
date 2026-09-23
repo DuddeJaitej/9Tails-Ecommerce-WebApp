@@ -69,7 +69,12 @@
     const fmt = function(v) { return '₹' + Number(v || 0).toFixed(2); };
 
     // Normalize image path — strip leading ../ for Python root server
-    function imgPath(p) { return (p || '').replace(/^\.\.\//, ''); }
+    function imgPath(p) {
+        if (!p) return '';
+        p = String(p).replace(/^\.\.\//, '');
+        if (!p.startsWith('/') && !p.startsWith('http')) p = '/' + p;
+        return p;
+    }
 
     function fmtDate(d) {
         var p = new Date(d);

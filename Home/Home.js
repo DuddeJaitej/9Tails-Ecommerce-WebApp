@@ -26,7 +26,7 @@ async function loadProductsFromApi() {
                 name:        p.name,
                 description: p.description || '',
                 category:    p.categoryName,
-                img:         (p.imageUrl || '').replace(/^\.\.\//, ''),
+                img:         imgFix(p.imageUrl),
                 gallery:     p.galleryImages || [],
                 price:       Number(p.price),
                 originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
@@ -187,7 +187,7 @@ function renderProducts() {
         return `
         <article class="product-card" data-id="${productKey}">
             <div class="product-image-wrap product-image-clickable" data-id="${productKey}" role="button" tabindex="0" aria-label="View ${product.name} details">
-                <img src="${product.img}" alt="${product.name}" />
+                <img src="${imgFix(product.img)}" alt="${product.name}" />
                 <div class="product-overlay-label">View Details</div>
                 <button class="wishlist-btn ${wishlist.some(item => item.key === product.key) ? 'active' : ''}" data-id="${productKey}" aria-label="Add to wishlist" type="button">♥</button>
             </div>
@@ -251,7 +251,7 @@ function mapApiProduct(p) {
         name:         p.name,
         description:  p.description || '',
         category:     p.categoryName,
-        img:          (p.imageUrl || '').replace(/^\.\.\//, ''),
+        img:          imgFix(p.imageUrl),
         gallery:      p.galleryImages || [],
         price:        Number(p.price),
         originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
@@ -260,10 +260,6 @@ function mapApiProduct(p) {
         inStock:      p.inStock,
         stock:        p.stock
     };
-}
-
-
-    localStorage.setItem('tapCart', JSON.stringify(cart));
 }
 
 function animateAddToCartButton(button) {

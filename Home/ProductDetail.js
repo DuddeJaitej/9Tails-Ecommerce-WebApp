@@ -48,7 +48,7 @@
                     name:         dto.name,
                     description:  dto.description || '',
                     category:     dto.categoryName,
-                    img:          dto.imageUrl || '',
+                    img:          imgFix(dto.imageUrl),
                     // gallery: API returns string array
                     gallery:      Array.isArray(dto.galleryImages)
                                     ? dto.galleryImages
@@ -66,7 +66,7 @@
                     const relDtos = await window.tapApi.products.related(productId);
                     window._relatedProducts = (relDtos || []).map(p => ({
                         key:      String(p.id), id: p.id, name: p.name,
-                        category: p.categoryName, img: p.imageUrl || '',
+                        category: p.categoryName, img: imgFix(p.imageUrl),
                         price:    Number(p.price), rating: p.rating || 4.0,
                         reviews:  p.reviewCount || 0, inStock: p.inStock
                     }));
