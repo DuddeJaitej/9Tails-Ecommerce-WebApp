@@ -837,6 +837,7 @@
         const subtotalEl       = document.getElementById('subtotal');
         const deliveryChargeEl = document.getElementById('deliveryCharge');
         const grandTotalEl     = document.getElementById('grandTotal');
+        const cartCountEl      = document.querySelector('.cart-count');
         const checkoutBtn      = document.getElementById('checkoutBtn');
         const addAddressBtn    = document.getElementById('addAddressBtn');
         const closeAddressModal= document.getElementById('closeAddressModal');
@@ -927,6 +928,7 @@
             const items      = Object.values(cartData);
             const totalItems = items.reduce((s, i) => s + i.qty, 0);
             itemCountEl.textContent = `${totalItems} item${totalItems === 1 ? '' : 's'}`;
+            if (cartCountEl) cartCountEl.textContent = totalItems;
 
             if (!items.length) {
                 cartItemsEl.innerHTML = `<div class="empty-cart-message">Your shopping bag is empty. Add products from the shop.</div>`;

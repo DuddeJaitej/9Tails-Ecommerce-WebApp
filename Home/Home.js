@@ -297,6 +297,10 @@ function animateAddToCartButton(button) {
     }, 900);
 }
 
+function updateCartStorage() {
+    localStorage.setItem('tapCart', JSON.stringify(cart));
+}
+
 function renderCart() {
     const items = Object.values(cart);
     const cartItemsContainer = cartItemsEl;
