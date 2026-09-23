@@ -679,6 +679,8 @@ img {
    Premium Footer
 ═══════════════════════════════════════ */
 .site-footer {
+    width: 100%;
+    box-sizing: border-box;
     margin-top: 40px;
     padding: 52px 10% 28px;
     background: linear-gradient(160deg, #1e0f1c 0%, #2d1428 55%, #1a0d1f 100%);
@@ -921,6 +923,15 @@ img {
 }
 
 @media (max-width: 640px) {
+    .site-footer {
+        padding-inline: 6%;
+    }
+
+    .footer-bottom {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
     .hero {
         height: 300px;
     }
