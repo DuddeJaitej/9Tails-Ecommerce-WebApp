@@ -78,14 +78,16 @@
         }
 
         // ── Fallback: products-data.js by key ──────────────────────────────
-        if (!product && productKey && typeof products !== 'undefined') {
-            const local = products.find(p => p.key === productKey);
+        const localProducts = window._productsData || [];
+
+        if (!product && productKey) {
+            const local = localProducts.find(p => p.key === productKey);
             if (local) product = local;
         }
 
         // ── Also try matching by id in local products array ────────────────
-        if (!product && productId && typeof products !== 'undefined') {
-            const local = products.find(p => String(p.id) === String(productId) || p.key === String(productId));
+        if (!product && productId) {
+            const local = localProducts.find(p => String(p.id) === String(productId) || p.key === String(productId));
             if (local) product = local;
         }
 

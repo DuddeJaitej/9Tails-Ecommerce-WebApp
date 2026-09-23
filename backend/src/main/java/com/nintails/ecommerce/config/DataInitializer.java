@@ -33,7 +33,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (categoryRepository.count() > 0) {
+        if (productRepository.count() > 0) {
             log.info("Database already seeded — skipping.");
             return;
         }
@@ -41,15 +41,15 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Seeding database...");
 
         // ── Categories ────────────────────────────────────────────────────────
-        Category fashion  = save(cat("Fashion",           "Clothing and apparel",             "Assets/Products/Fashion/fashion1.avif"));
-        Category jewelry  = save(cat("Jewelry",           "Rings, necklaces and bracelets",   "Assets/Products/Jewelry/jewelry1.avif"));
-        Category watches  = save(cat("Watches",           "Luxury and casual watches",        "Assets/Products/Watches/watches1.avif"));
-        Category bags     = save(cat("Bags",              "Handbags, backpacks and travel",   "Assets/Products/bags/bag1.avif"));
-        Category footwear = save(cat("Footwear",          "Shoes, sandals and boots",         "Assets/Products/Footwear/footwear1.avif"));
-        Category beauty   = save(cat("Beauty & Fragrance","Perfumes and skincare",            "Assets/Products/Beauty & Fragrance/fregrance1.avif"));
-        Category audio    = save(cat("Audio & Electronics","Headphones and speakers",         "Assets/Products/Audio & Electronics/audio1.webp"));
-        Category gadgets  = save(cat("Gadgets",           "Smart devices and accessories",    "Assets/Products/Gadgets/gadgets4.webp"));
-        Category books    = save(cat("Books",             "Fiction and educational books",    "Assets/Products/Books/books1.webp"));
+        Category fashion  = category("Fashion", "Clothing and apparel", "Assets/Products/Fashion/fashion1.avif");
+        Category jewelry  = category("Jewelry", "Rings, necklaces and bracelets", "Assets/Products/Jewelry/jewelry1.avif");
+        Category watches  = category("Watches", "Luxury and casual watches", "Assets/Products/Watches/watches1.avif");
+        Category bags     = category("Bags", "Handbags, backpacks and travel", "Assets/Products/bags/bag1.avif");
+        Category footwear = category("Footwear", "Shoes, sandals and boots", "Assets/Products/Footwear/footwear1.avif");
+        Category beauty   = category("Beauty & Fragrance", "Perfumes and skincare", "Assets/Products/Beauty & Fragrance/fregrance1.avif");
+        Category audio    = category("Audio & Electronics", "Headphones and speakers", "Assets/Products/Audio & Electronics/audio1.webp");
+        Category gadgets  = category("Gadgets", "Smart devices and accessories", "Assets/Products/Gadgets/gadgets4.webp");
+        Category books    = category("Books", "Fiction and educational books", "Assets/Products/Books/books1.webp");
 
         // ── Fashion (9 real images: fashion1–9) ──────────────────────────────
         p("Classic White Kurta",        "Premium cotton kurta for casual and festive occasions.",         899,  1299, 50, "Assets/Products/Fashion/fashion1.avif", 4.5, 128, fashion);
@@ -164,6 +164,11 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private Category save(Category c) { return categoryRepository.save(c); }
+
+    private Category category(String name, String desc, String img) {
+        return categoryRepository.findByNameIgnoreCase(name)
+                .orElseGet(() -> save(cat(name, desc, img)));
+    }
 
     private Category cat(String name, String desc, String img) {
         return Category.builder().name(name).description(desc).imageUrl(img).build();

@@ -1,5 +1,5 @@
 // Enhanced product catalog with ratings, descriptions, and gallery images
-const products = [
+window._productsData = [
     // Audio & Electronics
     { 
         id: 'audio-1', category: 'Audio & Electronics', name: 'Wireless Earbuds Pro', 

@@ -10,6 +10,12 @@ function imgFix(p) {
     return p;
 }
 
+function getProductContent(page) {
+    if (Array.isArray(page)) return page;
+    if (page && Array.isArray(page.content)) return page.content;
+    return [];
+}
+
 /**
  * Load products from Spring Boot API.
  * Maps ProductDto → the shape used by renderProducts():
@@ -19,8 +25,9 @@ function imgFix(p) {
 async function loadProductsFromApi() {
     try {
         const page = await window.tapApi.products.list(0, 200, 'newest');
-        if (page && page.content && page.content.length > 0) {
-            products = page.content.map(p => ({
+        const content = getProductContent(page);
+        if (content.length > 0) {
+            products = content.map(p => ({
                 key:         String(p.id),
                 id:          p.id,
                 name:        p.name,
@@ -448,10 +455,10 @@ categoryButtons.forEach(button => {
             try {
                 if (currentCategory === 'All') {
                     const page = await window.tapApi.products.list(0, 200, sortBy === 'low' ? 'price-low' : sortBy === 'high' ? 'price-high' : 'newest');
-                    products = page.content.map(mapApiProduct);
+                    products = getProductContent(page).map(mapApiProduct);
                 } else {
                     const page = await window.tapApi.products.byCategory(currentCategory, 0, 200, 'newest');
-                    products = page.content.map(mapApiProduct);
+                    products = getProductContent(page).map(mapApiProduct);
                 }
             } catch(e) { /* keep current products array */ }
         }
