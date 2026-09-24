@@ -686,7 +686,7 @@ img {
     background: linear-gradient(160deg, #1e0f1c 0%, #2d1428 55%, #1a0d1f 100%);
     border-top: 1px solid rgba(255,118,164,0.15);
     display: grid;
-    grid-template-columns: 1.4fr 0.9fr 0.9fr;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
     gap: 40px;
     align-items: start;
     border-radius: 32px 32px 0 0;
@@ -717,6 +717,7 @@ img {
 .site-footer > div {
     position: relative;
     z-index: 1;
+    min-width: 0;
 }
 
 /* Brand column */
@@ -805,6 +806,7 @@ img {
 /* Footer bottom bar */
 .footer-bottom {
     grid-column: 1 / -1;
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -929,7 +931,11 @@ img {
 
     .footer-bottom {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
+    }
+
+    .footer-bottom span:last-child {
+        text-align: right;
     }
 
     .hero {
