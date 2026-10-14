@@ -4,6 +4,12 @@ A full-stack ecommerce web application with a vanilla HTML/CSS/JavaScript storef
 
 Repository: https://github.com/DuddeJaitej/9Tails-Ecommerce-WebApp
 
+<img width="1899" height="868" alt="Screenshot 2026-10-14 231402" src="https://github.com/user-attachments/assets/eb82317f-71f2-40aa-8592-161d46172d6b" />
+<img width="1904" height="872" alt="Screenshot 2026-10-14 231436" src="https://github.com/user-attachments/assets/db50e6fe-c0c8-48ee-814a-a6552636d6b5" />
+<img width="333" height="586" alt="Screenshot 2026-10-14 231224" src="https://github.com/user-attachments/assets/59759f56-cb51-4184-b09d-290d2c896c9a" />
+<img width="333" height="582" alt="Screenshot 2026-10-14 231243" src="https://github.com/user-attachments/assets/c80d10e3-aa3b-438f-b34a-99f04556a7f0" />
+
+
 ## Architecture
 
 ```mermaid
