@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS products (
     gallery_images  TEXT,
     rating          DOUBLE           DEFAULT 0.0,
     review_count    INT              DEFAULT 0,
+    fast_delivery   TINYINT(1)      NOT NULL DEFAULT 1,
     active          TINYINT(1)       NOT NULL DEFAULT 1,
     category_id     BIGINT           NOT NULL,
     created_at      DATETIME(6),

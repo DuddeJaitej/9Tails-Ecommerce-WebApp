@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
@@ -19,6 +20,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> findByCategoryIdAndActiveTrue(Long categoryId, Pageable pageable);
 
     Page<Product> findByCategoryNameIgnoreCaseAndActiveTrue(String categoryName, Pageable pageable);
+
+       Optional<Product> findByNameIgnoreCase(String name);
 
     @Query("SELECT p FROM Product p WHERE p.active = true AND " +
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')) OR " +

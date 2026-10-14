@@ -133,13 +133,59 @@ public class OrderService {
         }
 
         // Restore stock
-        order.getItems().forEach(item -> {
+        order.getItems().stream().filter(item -> !item.isCancelled()).forEach(item -> {
             Product p = item.getProduct();
             p.setStock(p.getStock() + item.getQuantity());
             productRepository.save(p);
+            item.setCancelled(true);
         });
 
         order.setStatus(Order.OrderStatus.CANCELLED);
+        return toDto(orderRepository.save(order));
+    }
+
+    @Transactional
+    public OrderDto cancelOrderItem(String email, Long orderId, Long itemId) {
+        User user = getUser(email);
+        Order order = orderRepository.findByIdAndUserId(orderId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        if (order.getStatus() != Order.OrderStatus.PENDING &&
+            order.getStatus() != Order.OrderStatus.CONFIRMED &&
+            order.getStatus() != Order.OrderStatus.PACKED) {
+            throw new BadRequestException("Order items can only be cancelled before the order is shipped");
+        }
+
+        OrderItem item = order.getItems().stream()
+                .filter(orderItem -> orderItem.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Order item", itemId));
+
+        if (item.isCancelled()) {
+            throw new BadRequestException("Order item is already cancelled");
+        }
+
+        Product product = item.getProduct();
+        product.setStock(product.getStock() + item.getQuantity());
+        productRepository.save(product);
+        item.setCancelled(true);
+
+        BigDecimal subtotal = BigDecimal.ZERO;
+        for (OrderItem orderItem : order.getItems()) {
+            if (!orderItem.isCancelled()) {
+                subtotal = subtotal.add(orderItem.getLineTotal());
+            }
+        }
+        BigDecimal delivery = subtotal.compareTo(FREE_DELIVERY_THRESHOLD) > 0
+                ? BigDecimal.ZERO : DELIVERY_CHARGE;
+        order.setSubtotal(subtotal);
+        order.setDeliveryCharge(subtotal.signum() == 0 ? BigDecimal.ZERO : delivery);
+        order.setTotal(order.getSubtotal().add(order.getDeliveryCharge()));
+
+        if (subtotal.signum() == 0) {
+            order.setStatus(Order.OrderStatus.CANCELLED);
+        }
+
         return toDto(orderRepository.save(order));
     }
 
@@ -199,6 +245,7 @@ public class OrderService {
                         .unitPrice(i.getUnitPrice())
                         .quantity(i.getQuantity())
                         .lineTotal(i.getLineTotal())
+                        .cancelled(i.isCancelled())
                         .build())
                 .toList();
 

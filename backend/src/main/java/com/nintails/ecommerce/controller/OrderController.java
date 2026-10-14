@@ -59,6 +59,16 @@ public class OrderController {
                 orderService.cancelOrder(user.getUsername(), id)));
     }
 
+    // PATCH /api/orders/{id}/items/{itemId}/cancel
+    @PatchMapping("/{id}/items/{itemId}/cancel")
+    public ResponseEntity<ApiResponse<OrderDto>> cancelOrderItem(
+            @AuthenticationPrincipal UserDetails user,
+            @PathVariable Long id,
+            @PathVariable Long itemId) {
+        return ResponseEntity.ok(ApiResponse.ok("Order item cancelled",
+                orderService.cancelOrderItem(user.getUsername(), id, itemId)));
+    }
+
     // PATCH /api/orders/{id}/return
     @PatchMapping("/{id}/return")
     public ResponseEntity<ApiResponse<OrderDto>> requestReturn(

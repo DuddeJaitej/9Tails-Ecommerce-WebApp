@@ -41,5 +41,6 @@ public class OrderDto {
         private BigDecimal unitPrice;
         private Integer quantity;
         private BigDecimal lineTotal;
+        private boolean cancelled;
     }
 }

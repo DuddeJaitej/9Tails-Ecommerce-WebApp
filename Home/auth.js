@@ -5,8 +5,7 @@
  *   • Login / Register → Spring Boot API (/auth/login, /auth/register)
  *   • JWT stored in  localStorage['tap_jwt']
  *   • Session user    localStorage['tapUser'] (name, email, photo — no password)
- *   • Google OAuth still handled client-side (fetches profile, then calls /auth/login
- *     with google token path — or just stores profile locally as before)
+ *   • Google OAuth credentials are exchanged with Spring Boot for a JWT session
  *
  * Backward-compat: all pages call  window.tapAuth.initAuth({...})  unchanged.
  */
@@ -16,9 +15,19 @@
 
     const USER_KEY    = 'tapUser';
     const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=ff76a4&color=fff&bold=true&name=';
+    let openActiveAuthModal = null;
 
     function buildAvatar(name) {
         return DEFAULT_AVATAR + encodeURIComponent((name || 'User').trim());
+    }
+
+    function requestLogin(message) {
+        if (message) showAuthToast('info', message);
+        if (openActiveAuthModal) {
+            openActiveAuthModal('login');
+            return;
+        }
+        document.querySelector('.login')?.click();
     }
 
     function getSession() {
@@ -45,7 +54,7 @@
     }
 
     function isLoggedIn() {
-        return !!(getSession() && localStorage.getItem('tap_jwt'));
+        return !!(getSession() && window.tapApi?.getToken());
     }
 
     /* ── Toast helper (inline so auth.js has no deps) ─────────────────────── */
@@ -63,8 +72,15 @@
             border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,0.13);pointer-events:all;
             border-left:4px solid ${colors[type]||'#999'};font-size:.9rem;color:#1a1a2e;
             animation:authToastIn .35s cubic-bezier(.34,1.56,.64,1) both;`;
-        t.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()"
-            style="background:none;border:none;cursor:pointer;color:#aaa;font-size:1rem;padding:0 4px">×</button>`;
+        const message = document.createElement('span');
+        message.textContent = msg;
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.textContent = '×';
+        closeButton.setAttribute('aria-label', 'Dismiss notification');
+        closeButton.style.cssText = 'background:none;border:none;cursor:pointer;color:#aaa;font-size:1rem;padding:0 4px';
+        closeButton.addEventListener('click', () => t.remove());
+        t.append(message, closeButton);
         if (!document.getElementById('auth-toast-kf')) {
             const s = document.createElement('style');
             s.id = 'auth-toast-kf';
@@ -103,7 +119,7 @@
 
         // ── Render current session ──────────────────────────────────────────
         function refreshUI() {
-            const user = getSession();
+            const user = isLoggedIn() ? getSession() : null;
             if (user) {
                 if (loginBtn)   loginBtn.classList.add('hidden');
                 if (navProfile) navProfile.classList.remove('hidden');
@@ -119,10 +135,29 @@
             }
         }
         refreshUI();
+        syncCartCountFromApi();
+        window.addEventListener('tap:unauthorized', () => {
+            clearSession();
+            refreshUI();
+        });
 
         // ── Modal helpers ───────────────────────────────────────────────────
         function openModal(mode = 'login') { setMode(mode); authModal.classList.remove('hidden'); if (pageOverlay) pageOverlay.classList.remove('hidden'); }
         function closeModal() { authModal.classList.add('hidden'); if (pageOverlay) pageOverlay.classList.add('hidden'); authForm.reset(); }
+        openActiveAuthModal = openModal;
+
+        function completeLogin(result) {
+            if (!result?.token || !result.email) {
+                throw new Error('The server did not return a valid login session.');
+            }
+            window.tapApi.setToken(result.token);
+            saveSession(result);
+            closeModal();
+            showAuthToast('success', `Welcome, ${result.fullName || result.email}! 👋`);
+            refreshUI();
+            syncCartCountFromApi();
+            window.dispatchEvent(new Event('tap:authenticated'));
+        }
 
         function setMode(mode) {
             authModal.dataset.mode = mode;
@@ -166,15 +201,7 @@
                     result = await window.tapApi.auth.login(email, password);
                 }
 
-                // Persist JWT + session
-                window.tapApi.setToken(result.token);
-                saveSession(result);
-                closeModal();
-                showAuthToast('success', `Welcome, ${result.fullName || result.email}! 👋`);
-                refreshUI();
-
-                // Sync cart count from API after login
-                syncCartCountFromApi();
+                completeLogin(result);
 
             } catch (err) {
                 showAuthToast('error', err.message || 'Authentication failed. Please try again.');
@@ -186,7 +213,7 @@
             }
         });
 
-        // ── Google OAuth (client-side profile fetch, then save session) ─────
+        // ── Google OAuth exchanged for a Spring Boot JWT ─────────────────────
         let tokenClient = null;
 
         function handleGoogleLogin() {
@@ -199,17 +226,15 @@
                     client_id: clientId,
                     scope: 'openid profile email',
                     callback: async (response) => {
-                        if (response.error) return;
+                        if (response.error) {
+                            showAuthToast('error', 'Google sign-in failed. Please try again.');
+                            return;
+                        }
                         try {
-                            const p = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${encodeURIComponent(response.access_token)}`).then(r => r.json());
-                            // Google users: we just save their profile session locally
-                            // (no backend call — treat as guest with profile)
-                            saveSession({ fullName: p.name, email: p.email, photo: p.picture, role: 'USER' });
-                            closeModal();
-                            showAuthToast('success', `Welcome, ${p.name}!`);
-                            refreshUI();
-                        } catch {
-                            showAuthToast('error', 'Unable to load Google profile. Try again.');
+                            const result = await window.tapApi.auth.google(response.access_token);
+                            completeLogin(result);
+                        } catch (err) {
+                            showAuthToast('error', err.message || 'Google sign-in failed. Please try again.');
                         }
                     },
                     prompt: 'select_account'
@@ -254,26 +279,64 @@
     }
 
     /* ── Cart count sync from API ─────────────────────────────────────────── */
+    let cartCountSyncVersion = 0;
+
+    function setCartCount(countEl, value) {
+        const count = String(value);
+        if (countEl.textContent === count) return;
+        countEl.textContent = count;
+        countEl.classList.remove('cart-count-updated');
+        void countEl.offsetWidth;
+        countEl.classList.add('cart-count-updated');
+        setTimeout(() => countEl.classList.remove('cart-count-updated'), 350);
+    }
+
     async function syncCartCountFromApi() {
+        const requestVersion = ++cartCountSyncVersion;
         const countEl = document.querySelector('.cart-count');
         if (!countEl) return;
         if (!isLoggedIn()) {
-            // fallback: read from localStorage
-            const cart = JSON.parse(localStorage.getItem('tapCart') || '{}');
-            const count = Object.values(cart).reduce((s, i) => s + (i.qty || 0), 0);
-            countEl.textContent = count;
+            setCartCount(countEl, 0);
             return;
         }
+
+        const session = getSession();
+        const cacheKey = `tap_cart_count:${session?.email || 'default'}`;
+        try {
+            const cachedCount = localStorage.getItem(cacheKey);
+            if (cachedCount !== null) setCartCount(countEl, cachedCount);
+        } catch (e) {
+            console.warn('Cached cart count could not be read:', e.message);
+        }
+
         try {
             const summary = await window.tapApi.cart.get();
-            countEl.textContent = summary?.totalItems ?? 0;
-        } catch {
-            // If API fails, fall back to localStorage
-            const cart = JSON.parse(localStorage.getItem('tapCart') || '{}');
-            countEl.textContent = Object.values(cart).reduce((s, i) => s + (i.qty || 0), 0);
+            if (requestVersion !== cartCountSyncVersion) return;
+            const count = summary?.totalItems ?? 0;
+            setCartCount(countEl, count);
+            try {
+                localStorage.setItem(cacheKey, String(count));
+            } catch (e) {
+                console.warn('Cart count could not be cached:', e.message);
+            }
+        } catch (e) {
+            if (requestVersion === cartCountSyncVersion) {
+                if (window.tapApi?.getToken()) {
+                    console.warn('Cart count could not be refreshed:', e.message);
+                }
+            }
         }
     }
 
-    window.tapAuth = { initAuth, getSession, clearSession, isLoggedIn, syncCartCountFromApi, USER_KEY };
+    window.tapAuth = {
+        initAuth,
+        getSession,
+        clearSession,
+        isLoggedIn,
+        syncCartCountFromApi,
+        requestLogin,
+        notify: showAuthToast,
+        USER_KEY
+    };
 
 }());

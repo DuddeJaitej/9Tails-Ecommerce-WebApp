@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="../Assets/9tails-logo.svg" />
     <title>Orders - 9Tails</title>
     <link rel="stylesheet" href="Home.css?v=footer-align" />
     <link rel="stylesheet" href="Orders.css" />
@@ -19,6 +20,7 @@
             <nav class="nav">
                 <div class="nav-brand-row">
                     <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">☰</button>
+                    <img class="brand-logo" src="../Assets/9tails-logo.svg" alt="" aria-hidden="true" />
                     <h1>9Tails</h1>
                 </div>
                 <div class="nav-links" id="navLinks">
@@ -27,7 +29,7 @@
                         <li><a class="nav-link active" href="Orders.html">Orders</a></li>
                         <li>
                             <button class="cart-toggle" type="button" aria-label="Open cart">
-                                <img src="/Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
+                                <img src="../Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
                                 <span class="cart-count">0</span>
                             </button>
                         </li>
@@ -97,7 +99,7 @@
                                     </div>
                                 </div>
                                 <div class="help-banner-img-wrap">
-                                    <img src="/Assets/Orders/Help Line.png" alt="Customer support illustration" class="help-banner-img" />
+                                    <img src="../Assets/Orders/Help Line.png" alt="Customer support illustration" class="help-banner-img" />
                                 </div>
                             </div>
                         </div>
@@ -244,6 +246,27 @@
         </div>
     </div>
 
+    <dialog class="cancel-item-dialog" id="cancelItemDialog" aria-labelledby="cancelItemTitle">
+        <div class="cancel-item-dialog-content">
+            <button class="cancel-item-close" id="cancelItemClose" type="button" aria-label="Close dialog">×</button>
+            <span class="cancel-item-eyebrow">Order change</span>
+            <h2 id="cancelItemTitle">Cancel this item?</h2>
+            <p class="cancel-item-description">This item will be removed from your order. This action can’t be undone.</p>
+            <div class="cancel-item-summary">
+                <img class="cancel-item-image" id="cancelItemImage" alt="" />
+                <div>
+                    <strong id="cancelItemName"></strong>
+                    <span id="cancelItemMeta"></span>
+                </div>
+            </div>
+            <p class="cancel-item-error hidden" id="cancelItemError" role="alert"></p>
+            <div class="cancel-item-actions">
+                <button class="cancel-item-keep" id="cancelItemKeep" type="button">Keep item</button>
+                <button class="cancel-item-confirm" id="cancelItemConfirm" type="button">Yes, cancel item</button>
+            </div>
+        </div>
+    </dialog>
+
     <div class="overlay hidden" id="pageOverlay"></div>
 
     <script>
@@ -279,8 +302,8 @@
             logoutButtonSelector: '.logout-btn'
         });
 
-        const orders  = [];   // will be populated from API or localStorage
-        const wishlist = [];  // will be populated from API or localStorage
+        const orders  = [];   // loaded from Spring Boot
+        const wishlist = [];  // loaded from Spring Boot
         const ordersList = document.getElementById('ordersList');
         const wishlistList = document.getElementById('wishlistList');
         const ordersPanel = document.getElementById('ordersPanel');
@@ -290,9 +313,31 @@
         const faqQuestions = document.querySelectorAll('.faq-question');
         const cartToggle = document.querySelector('.cart-toggle');
         const cartCountEl = document.querySelector('.cart-count');
-        const cart = JSON.parse(localStorage.getItem('tapCart') || '{}');
+        const cart = {};
+        const cancelItemDialog = document.getElementById('cancelItemDialog');
+        const cancelItemImage = document.getElementById('cancelItemImage');
+        const cancelItemName = document.getElementById('cancelItemName');
+        const cancelItemMeta = document.getElementById('cancelItemMeta');
+        const cancelItemError = document.getElementById('cancelItemError');
+        const cancelItemConfirm = document.getElementById('cancelItemConfirm');
+        let itemPendingCancellation = null;
 
-        // ── Load data from API (with localStorage fallback) ─────────────────
+        function closeCancelItemDialog() {
+            if (cancelItemDialog.open) cancelItemDialog.close();
+        }
+
+        document.getElementById('cancelItemKeep').addEventListener('click', closeCancelItemDialog);
+        document.getElementById('cancelItemClose').addEventListener('click', closeCancelItemDialog);
+        cancelItemDialog.addEventListener('close', () => {
+            itemPendingCancellation = null;
+            cancelItemConfirm.disabled = false;
+            cancelItemConfirm.textContent = 'Yes, cancel item';
+        });
+        cancelItemDialog.addEventListener('click', event => {
+            if (event.target === cancelItemDialog) closeCancelItemDialog();
+        });
+
+        // ── Load data only from Spring Boot ─────────────────────────────────
         async function loadAllData() {
             const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
 
@@ -313,11 +358,13 @@
                         delivery:  Number(o.deliveryCharge),
                         paymentMethod: (o.paymentMethod || 'COD').toLowerCase(),
                         items: (o.items || []).map(i => ({
+                            _apiId:   i.id,
                             name:     i.productName,
                             img:      i.productImageUrl || '',
                             category: i.categoryName,
                             price:    Number(i.unitPrice),
-                            qty:      i.quantity
+                            qty:      i.quantity,
+                            cancelled: i.cancelled
                         })),
                         address: {
                             fullName:   o.addressFullName,
@@ -329,13 +376,8 @@
                     }));
                     orders.push(...apiOrders);
                 } catch(e) {
-                    // fallback to localStorage
-                    const local = JSON.parse(localStorage.getItem('tapOrders') || '[]');
-                    orders.push(...local);
+                    orders.length = 0;
                 }
-            } else {
-                const local = JSON.parse(localStorage.getItem('tapOrders') || '[]');
-                orders.push(...local);
             }
 
             // ── Wishlist ────────────────────────────────────────────────────
@@ -355,12 +397,8 @@
                     }));
                     wishlist.push(...mapped);
                 } catch(e) {
-                    const local = JSON.parse(localStorage.getItem('tapWishlist') || '[]');
-                    wishlist.push(...local);
+                    wishlist.length = 0;
                 }
-            } else {
-                const local = JSON.parse(localStorage.getItem('tapWishlist') || '[]');
-                wishlist.push(...local);
             }
 
             renderOrders();
@@ -383,7 +421,10 @@
 
         // Normalize image path for Python root server (strip leading ../)
         function imgPath(p) {
-            return (p || '').replace(/^\.\.\//, '');
+            if (!p) return '';
+            const path = String(p).replace(/^\.\.\//, '');
+            if (/^https?:\/\//i.test(path)) return path;
+            return '/' + path.split('/').map(encodeURIComponent).join('/');
         }
 
         // Format a stored date string → "DD-Mon-YYYY, HH:MM:SS"
@@ -429,15 +470,10 @@
                 const status = order.status || 'Pending';
                 const statusClass = status.toLowerCase().replace(/\s+/g, '-');
 
-                // Total item count
-                const totalItems = order.items.reduce((sum, item) => sum + (item.qty || 1), 0);
-                
-                // Preview first 3 items as thumbnails
-                const previewItems = order.items.slice(0, 3);
-                const remainingCount = totalItems - previewItems.length;
+                const canCancelItems = ['Pending', 'Confirmed', 'Packed & Ready'].includes(status);
 
                 return `
-                    <article class="order-card" onclick="window.location.href='OrderTracking.html?id=${encodeURIComponent(order.id)}'">
+                    <article class="order-card" onclick="window.location.href='OrderTracking.html?id=${encodeURIComponent(order._apiId || order.id)}'">
                         <div class="order-card-header">
                             <div class="order-card-header-left">
                                 <div class="order-card-header-top">
@@ -454,19 +490,89 @@
                             </div>
                             <div class="order-total-amount">${formatPrice(order.total)}</div>
                         </div>
-
-                        <div class="order-items-preview">
-                            ${previewItems.map(item => `
-                                <img class="order-preview-thumb" src="${imgPath(item.img)}" alt="${item.name}" />
-                            `).join('')}
-                            ${remainingCount > 0 ? `
-                                <div class="order-items-count">+${remainingCount} more</div>
-                            ` : ''}
+                        <div class="order-item-cancel-list" aria-label="Order items">
+                            ${order.items.map(item => {
+                                const itemImage = imgPath(item.img);
+                                return `
+                                    <div class="order-item-cancel-row">
+                                        ${itemImage
+                                            ? `<img class="order-item-thumb" src="${itemImage}" alt="${item.name}" loading="lazy" />`
+                                            : '<div class="order-item-thumb order-item-thumb-placeholder" aria-hidden="true">9T</div>'}
+                                        <div class="order-item-cancel-info">
+                                            <strong>${item.name}</strong>
+                                            <span>${item.qty} × ${formatPrice(item.price)}</span>
+                                        </div>
+                                        ${item.cancelled
+                                            ? '<span class="order-item-cancelled">Cancelled</span>'
+                                            : canCancelItems
+                                                ? `<button class="order-item-cancel-btn" type="button"
+                                                    data-order-id="${order._apiId}" data-item-id="${item._apiId}">
+                                                    Cancel item
+                                                </button>`
+                                                : ''}
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </article>
                 `;
             }).join('');
         }
+
+        ordersList.addEventListener('click', async event => {
+            const button = event.target.closest('.order-item-cancel-btn');
+            if (!button) return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            const order = orders.find(item => String(item._apiId) === button.dataset.orderId);
+            const orderItem = order?.items.find(item => String(item._apiId) === button.dataset.itemId);
+            if (!order || !orderItem) return;
+
+            itemPendingCancellation = { order, orderItem };
+            cancelItemImage.src = imgPath(orderItem.img);
+            cancelItemImage.alt = orderItem.name;
+            cancelItemName.textContent = orderItem.name;
+            cancelItemMeta.textContent = `${orderItem.qty} × ${formatPrice(orderItem.price)} · Order #${order.id}`;
+            cancelItemError.textContent = '';
+            cancelItemError.classList.add('hidden');
+            cancelItemDialog.showModal();
+        }, { capture: true });
+
+        cancelItemConfirm.addEventListener('click', async () => {
+            if (!itemPendingCancellation || !window.tapApi) {
+                cancelItemError.textContent = 'Cancellation is unavailable right now. Please refresh and try again.';
+                cancelItemError.classList.remove('hidden');
+                return;
+            }
+
+            const { order, orderItem } = itemPendingCancellation;
+            cancelItemConfirm.disabled = true;
+            cancelItemConfirm.textContent = 'Cancelling…';
+            try {
+                const updated = await window.tapApi.orders.cancelItem(order._apiId, orderItem._apiId);
+                order.status = titleCaseStatus(updated.status);
+                order.subtotal = Number(updated.subtotal);
+                order.delivery = Number(updated.deliveryCharge);
+                order.total = Number(updated.total);
+                order.items = (updated.items || []).map(item => ({
+                    _apiId: item.id,
+                    name: item.productName,
+                    img: item.productImageUrl || '',
+                    category: item.categoryName,
+                    price: Number(item.unitPrice),
+                    qty: item.quantity,
+                    cancelled: item.cancelled
+                }));
+                renderOrders();
+                closeCancelItemDialog();
+            } catch (error) {
+                cancelItemError.textContent = error.message || 'The order item could not be cancelled.';
+                cancelItemError.classList.remove('hidden');
+                cancelItemConfirm.disabled = false;
+                cancelItemConfirm.textContent = 'Try again';
+            }
+        });
 
         function flashSuccessButton(button) {
             if (!button) return;
@@ -483,27 +589,19 @@
             }, 900);
         }
 
-        function saveCart() {
-            localStorage.setItem('tapCart', JSON.stringify(cart));
-            updateCartCount();
-        }
-
         function updateCartCount() {
-            const count = Object.values(cart).reduce((sum, item) => sum + (item.qty || 0), 0);
-            if (cartCountEl) {
-                cartCountEl.textContent = count;
-            }
+            if (window.tapAuth) window.tapAuth.syncCartCountFromApi();
         }
 
-        function addWishlistToCart(item, button) {
+        async function addWishlistToCart(item, button) {
             if (!item) return;
-            if (cart[item.key]) {
-                cart[item.key].qty += 1;
-            } else {
-                cart[item.key] = { ...item, qty: 1 };
+            try {
+                await window.tapApi.cart.add(item._apiId || item.key, 1);
+                flashSuccessButton(button);
+                updateCartCount();
+            } catch (e) {
+                console.warn('Wishlist item could not be added to cart:', e.message);
             }
-            saveCart();
-            flashSuccessButton(button);
         }
 
         async function removeWishlistItem(itemKey, apiId) {
@@ -511,10 +609,8 @@
             if (apiId && window.tapApi && window.tapAuth.isLoggedIn()) {
                 try { await window.tapApi.wishlist.toggle(apiId); } catch(e) {}
             }
-            // Always update localStorage too
             const updatedWishlist = wishlist.filter(item => item.key !== itemKey);
             wishlist.splice(0, wishlist.length, ...updatedWishlist);
-            localStorage.setItem('tapWishlist', JSON.stringify(wishlist));
             renderWishlist();
         }
 
@@ -617,7 +713,7 @@
         });
 
         updateCartCount();
-        // ── Init: load everything from API / localStorage ──────────────────
+        // ── Init: load everything from Spring Boot ─────────────────────────
         loadAllData();
         setActiveView('orders');
     </script>
@@ -625,7 +721,7 @@
     <footer class="site-footer">
         <div class="footer-brand">
             <span class="footer-badge">✦ Luxury Essentials</span>
-            <h3>9Tails</h3>
+            <h3><img class="footer-logo" src="../Assets/9tails-logo.svg" alt="" aria-hidden="true" />9Tails</h3>
             <p>Curated fashion, accessories, and everyday essentials — delivered with care to your doorstep.</p>
         </div>
         <div class="footer-nav">

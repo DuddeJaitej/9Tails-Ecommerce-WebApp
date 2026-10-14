@@ -13,12 +13,26 @@ Write-Host ""
 
 Write-Host "[1/5] MySQL..." -ForegroundColor Yellow
 $svc = Get-Service -Name "MySQL80" -ErrorAction SilentlyContinue
-if ($svc -and $svc.Status -eq "Running") {
+if (-not $svc) {
+    Write-Host "      ERROR - MySQL80 service was not found" -ForegroundColor Red
+    exit 1
+} elseif ($svc.Status -eq "Running") {
     Write-Host "      OK - running" -ForegroundColor Green
 } else {
     Start-Service "MySQL80" -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 4
+    $svc = Get-Service -Name "MySQL80"
+    if ($svc.Status -ne "Running") {
+        Write-Host "      ERROR - MySQL80 could not be started" -ForegroundColor Red
+        exit 1
+    }
     Write-Host "      OK - started" -ForegroundColor Green
+}
+
+if (-not $env:DB_PASSWORD) {
+    Write-Host "      ERROR - DB_PASSWORD is not set" -ForegroundColor Red
+    Write-Host '      Set it first: $env:DB_PASSWORD = "your_mysql_root_password"' -ForegroundColor Yellow
+    exit 1
 }
 
 Write-Host "[2/5] Port 8081..." -ForegroundColor Yellow
@@ -42,7 +56,7 @@ if ($p2) {
 }
 
 Write-Host "[4/5] Starting Spring Boot on :8081..." -ForegroundColor Yellow
-Start-Process "cmd.exe" -ArgumentList "/k cd /d `"$BACKEND`" && mvn spring-boot:run" -WorkingDirectory $BACKEND
+Start-Process "cmd.exe" -ArgumentList "/k cd /d `"$BACKEND`" && mvn -f pom.xml spring-boot:run" -WorkingDirectory $BACKEND
 Write-Host "      Backend window opened" -ForegroundColor Green
 
 Write-Host "[5/5] Starting frontend server on :5500..." -ForegroundColor Yellow

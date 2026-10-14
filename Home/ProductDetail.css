@@ -317,6 +317,14 @@
     box-shadow: 0 10px 24px rgba(255, 118, 164, 0.24);
 }
 
+.pd-wishlist-btn.is-just-added {
+    animation: pdWishlistPulse 0.7s ease;
+}
+
+@keyframes pdWishlistPulse {
+    50% { transform: scale(1.08); }
+}
+
 /* ── Feature Highlights ───────────────────────────────────────── */
 .pd-highlights {
     list-style: none;
@@ -858,14 +866,50 @@
 
 @media (max-width: 640px) {
     .categories-section, .deals-section, .testimonials-section, .trust-section { padding-left: 5%; padding-right: 5%; }
-    .categories-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .categories-grid {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 8px 2px 14px;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .categories-grid::-webkit-scrollbar { display: none; }
+    .cat-card {
+        flex: 0 0 clamp(120px, 36vw, 156px);
+        scroll-snap-align: start;
+    }
     .deals-card { min-height: 280px; padding: 24px; }
     .deals-card-text h3 { font-size: 1.3rem; }
-    .testimonials-grid { grid-template-columns: 1fr; }
+    .testimonials-grid {
+        display: flex;
+        gap: 14px;
+        overflow-x: auto;
+        padding: 8px 2px 14px;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .testimonials-grid::-webkit-scrollbar { display: none; }
+    .testimonial-card {
+        flex: 0 0 min(82vw, 340px);
+        scroll-snap-align: start;
+    }
     .pd-container { padding: 0 5% 50px; }
     .pd-related { padding: 0 5% 50px; }
     .pd-related-grid { grid-template-columns: repeat(2, 1fr); }
     .pd-actions { flex-direction: column; align-items: stretch; }
+    .pd-qty-row {
+        align-self: center;
+        width: min(100%, 210px);
+        justify-content: space-between;
+    }
+    .pd-qty-btn {
+        flex: 1 1 0;
+        width: auto;
+    }
+    .pd-qty-val { flex: 0 0 44px; }
     .pd-add-cart-btn { min-width: auto; }
     .trust-inner { gap: 16px; }
     .trust-item { min-width: 100px; }
@@ -884,14 +928,7 @@
         font-size: 1.8rem;
     }
 
-    .categories-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-    }
-
-    .cat-card {
-        border-radius: 16px;
-    }
+    .cat-card { border-radius: 16px; }
 
     .cat-card-label {
         bottom: 9px;

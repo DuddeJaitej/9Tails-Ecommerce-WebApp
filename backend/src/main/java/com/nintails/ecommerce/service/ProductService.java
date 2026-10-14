@@ -73,6 +73,7 @@ public class ProductService {
                 .imageUrl(request.getImageUrl())
                 .galleryImages(request.getGalleryImages())
                 .rating(request.getRating())
+                .fastDelivery(request.getFastDelivery())
                 .category(category)
                 .active(true)
                 .build();
@@ -94,6 +95,7 @@ public class ProductService {
         product.setImageUrl(request.getImageUrl());
         product.setGalleryImages(request.getGalleryImages());
         product.setRating(request.getRating());
+        product.setFastDelivery(request.getFastDelivery());
         product.setCategory(category);
 
         return toDto(productRepository.save(product));
@@ -139,6 +141,7 @@ public class ProductService {
                 .galleryImages(gallery)
                 .rating(p.getRating())
                 .reviewCount(p.getReviewCount())
+                .fastDelivery(Boolean.TRUE.equals(p.getFastDelivery()))
                 .categoryId(p.getCategory().getId())
                 .categoryName(p.getCategory().getName())
                 .createdAt(p.getCreatedAt())

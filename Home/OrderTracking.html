@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="../Assets/9tails-logo.svg" />
     <title>Track Order - 9Tails</title>
     <link rel="stylesheet" href="Home.css" />
     <link rel="stylesheet" href="OrderTracking.css" />
@@ -18,6 +19,7 @@
             <nav class="nav">
                 <div class="nav-brand-row">
                     <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">☰</button>
+                    <img class="brand-logo" src="../Assets/9tails-logo.svg" alt="" aria-hidden="true" />
                     <h1>9Tails</h1>
                 </div>
                 <div class="nav-links" id="navLinks">
@@ -26,7 +28,7 @@
                         <li><a class="nav-link" href="Orders.html">Orders</a></li>
                         <li>
                             <button class="cart-toggle" type="button" aria-label="Open cart">
-                                <img src="/Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
+                                <img src="../Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
                                 <span class="cart-count">0</span>
                             </button>
                         </li>
@@ -87,7 +89,7 @@
                         </div>
                         <div class="delivery-banner-img-wrap">
                             <img
-                                src="/Assets/Orders/Shipping.png"
+                                src="../Assets/Orders/Shipping.png"
                                 alt="Delivery illustration"
                                 class="delivery-banner-img"
                             />
@@ -209,9 +211,10 @@
     <script src="api.js"></script>
     <script src="auth.js"></script>
     <script src="OrderTracking.js"></script>
+    <footer class="site-footer">
         <div class="footer-brand">
             <span class="footer-badge">✦ Luxury Essentials</span>
-            <h3>9Tails</h3>
+            <h3><img class="footer-logo" src="../Assets/9tails-logo.svg" alt="" aria-hidden="true" />9Tails</h3>
             <p>Curated fashion, accessories, and everyday essentials — delivered with care to your doorstep.</p>
         </div>
         <div class="footer-nav">

@@ -53,6 +53,10 @@ public class Product {
     private Integer reviewCount = 0;
 
     @Builder.Default
+    @Column(nullable = false)
+    private Boolean fastDelivery = true;
+
+    @Builder.Default
     private Boolean active = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
