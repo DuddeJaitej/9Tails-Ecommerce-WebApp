@@ -87,7 +87,12 @@ img {
     gap: 12px;
 }
 
-/* Brand logo text */
+.brand-logo {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+}
+
 .nav h1 {
     font-size: 1.75rem;
     font-weight: 800;
@@ -290,6 +295,9 @@ img {
     box-shadow: 0 2px 8px rgba(255,118,164,0.45);
     animation: badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1);
 }
+.cart-count.cart-count-updated {
+    animation: badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
 @keyframes badgePop {
     from { transform: scale(0); }
     to   { transform: scale(1); }
@@ -445,8 +453,19 @@ img {
 
 .tab-list {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 12px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.tab-list::-webkit-scrollbar {
+    display: none;
 }
 
 .tab-button {
@@ -738,6 +757,9 @@ img {
 }
 
 .footer-brand h3 {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     font-size: 1.9rem;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -746,6 +768,12 @@ img {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     margin-bottom: 10px;
+}
+
+.footer-logo {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
 }
 
 .footer-brand p {
@@ -1919,8 +1947,6 @@ img {
         overflow-x: auto;
         overscroll-behavior-inline: contain;
         padding: 4px 2px 10px;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(124, 97, 108, 0.35) transparent;
     }
 
     .tab-button {

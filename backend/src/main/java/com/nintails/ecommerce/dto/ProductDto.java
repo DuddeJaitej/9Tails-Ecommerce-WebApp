@@ -22,6 +22,7 @@ public class ProductDto {
     private List<String> galleryImages;
     private Double rating;
     private Integer reviewCount;
+    private boolean fastDelivery;
     private Long categoryId;
     private String categoryName;
     private LocalDateTime createdAt;

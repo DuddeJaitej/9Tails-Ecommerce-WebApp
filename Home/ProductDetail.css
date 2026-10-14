@@ -317,6 +317,14 @@
     box-shadow: 0 10px 24px rgba(255, 118, 164, 0.24);
 }
 
+.pd-wishlist-btn.is-just-added {
+    animation: pdWishlistPulse 0.7s ease;
+}
+
+@keyframes pdWishlistPulse {
+    50% { transform: scale(1.08); }
+}
+
 /* ── Feature Highlights ───────────────────────────────────────── */
 .pd-highlights {
     list-style: none;

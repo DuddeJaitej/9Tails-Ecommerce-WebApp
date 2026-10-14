@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="../Assets/9tails-logo.svg" />
     <title>Shopping Bag - 9tails</title>
     <link rel="stylesheet" href="Home.css" />
     <link rel="stylesheet" href="ProductDetail.css" />
@@ -487,6 +488,7 @@
             <nav class="nav">
                 <div class="nav-brand-row">
                     <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">☰</button>
+                    <img class="brand-logo" src="../Assets/9tails-logo.svg" alt="" aria-hidden="true" />
                     <h1>9Tails</h1>
                 </div>
                 <div class="nav-links" id="navLinks">
@@ -495,7 +497,7 @@
                         <li><a class="nav-link" href="Orders.html">Orders</a></li>
                         <li>
                             <button class="cart-toggle cart-nav-active" type="button" aria-label="Open cart" onclick="window.location.href='Cart.html'">
-                                <img src="/Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
+                                <img src="../Assets/Shopping-bag/shopping-bag.png" alt="Shopping Bag" />
                                 <span class="cart-count">0</span>
                             </button>
                         </li>
@@ -638,7 +640,7 @@
     <footer class="site-footer">
         <div class="footer-brand">
             <span class="footer-badge">✦ Luxury Essentials</span>
-            <h3>9Tails</h3>
+            <h3><img class="footer-logo" src="../Assets/9tails-logo.svg" alt="" aria-hidden="true" />9Tails</h3>
             <p>Curated fashion, accessories, and everyday essentials — delivered with care to your doorstep.</p>
         </div>
         <div class="footer-nav">
@@ -778,9 +780,9 @@
         });
 
         /* ── State ── */
-        let cartData = {};   // will be loaded from API or localStorage
+        let cartData = {};   // loaded from Spring Boot
         const ADDRESS_LIST_KEY = 'tapAddresses';
-        let addresses          = JSON.parse(localStorage.getItem(ADDRESS_LIST_KEY) || '[]');
+        let addresses          = [];
         let selectedAddressIndex = addresses.findIndex(a => a.selected);
         let editingAddressIndex  = null;
         let paymentMethod        = 'cod';
@@ -788,7 +790,7 @@
 
         if (selectedAddressIndex === -1 && addresses.length) selectedAddressIndex = 0;
 
-        // ── Load cart from API (with localStorage fallback) ─────────────────
+        // ── Load cart and addresses from Spring Boot ────────────────────────
         async function initCartPage() {
             const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
             if (isLoggedIn && window.tapApi) {
@@ -800,7 +802,7 @@
                         cartData[item.productId] = {
                             key:      item.productId,
                             name:     item.productName,
-                            img:      item.productImageUrl || '',
+                            img:      imagePath(item.productImageUrl),
                             category: item.categoryName || '',
                             price:    Number(item.unitPrice),
                             qty:      item.quantity,
@@ -813,18 +815,21 @@
                         addressApiMap = {};
                         addresses = (apiAddresses || []).map((a, i) => {
                             addressApiMap[i] = a.id;
-                            return { fullName: a.fullName, street: a.street, city: a.city, postalCode: a.postalCode, country: a.country, selected: a.isDefault };
+                            return { id: a.id, fullName: a.fullName, street: a.street, city: a.city, postalCode: a.postalCode, country: a.country, selected: a.isDefault };
                         });
                         selectedAddressIndex = addresses.findIndex(a => a.selected);
                         if (selectedAddressIndex === -1 && addresses.length) selectedAddressIndex = 0;
-                        localStorage.setItem(ADDRESS_LIST_KEY, JSON.stringify(addresses));
-                    } catch(e) { /* use localStorage addresses */ }
+                    } catch(e) {
+                        addresses = [];
+                        addressApiMap = {};
+                        selectedAddressIndex = null;
+                    }
                 } catch(e) {
-                    // API failed — fall back to localStorage cart
-                    cartData = JSON.parse(localStorage.getItem('tapCart') || '{}');
+                    cartData = {};
+                    addresses = [];
+                    addressApiMap = {};
+                    selectedAddressIndex = null;
                 }
-            } else {
-                cartData = JSON.parse(localStorage.getItem('tapCart') || '{}');
             }
             renderSavedAddresses();
             renderAddressPreview();
@@ -851,10 +856,15 @@
         const fmt  = v => `₹${Number(v).toFixed(2)}`;
         const sub  = items => items.reduce((s,i) => s + i.price * i.qty, 0);
         const del  = s => s > 500 ? 0 : 10;
+        const imagePath = value => {
+            if (!value) return '';
+            const path = String(value).replace(/^\.\.\//, '');
+            if (/^https?:\/\//i.test(path)) return path;
+            return '/' + path.split('/').map(encodeURIComponent).join('/');
+        };
 
         function persistAddresses() {
             addresses.forEach((a,i) => a.selected = i === selectedAddressIndex);
-            localStorage.setItem(ADDRESS_LIST_KEY, JSON.stringify(addresses));
         }
 
         function updateSummary(items) {
@@ -919,11 +929,6 @@
             updateSummary(Object.values(cartData));
         }
 
-        function updateCartStorage() {
-            localStorage.setItem('tapCart', JSON.stringify(cartData));
-            renderCartPage();
-        }
-
         function renderCartPage() {
             const items      = Object.values(cartData);
             const totalItems = items.reduce((s, i) => s + i.qty, 0);
@@ -982,12 +987,11 @@
                         item.qty = newQty;
                     }
                 } catch(e) {
-                    // fallback
-                    if (newQty <= 0) delete cartData[id]; else item.qty = newQty;
+                    showToast('error', 'Cart update failed', e.message || 'Please try again.');
+                    return;
                 }
             } else {
-                if (newQty <= 0) delete cartData[id]; else item.qty = newQty;
-                localStorage.setItem('tapCart', JSON.stringify(cartData));
+                return;
             }
             renderCartPage();
         }
@@ -995,10 +999,10 @@
         async function removeCartItem(id) {
             const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
             if (isLoggedIn && window.tapApi) {
-                try { await window.tapApi.cart.remove(id); } catch(e) {}
+                try { await window.tapApi.cart.remove(id); }
+                catch(e) { showToast('error', 'Item could not be removed', e.message || 'Please try again.'); return; }
             }
             delete cartData[id];
-            localStorage.setItem('tapCart', JSON.stringify(cartData));
             renderCartPage();
         }
 
@@ -1024,14 +1028,30 @@
             addressForm.reset();
         }
 
-        function deleteAddress(index) {
+        async function deleteAddress(index) {
+            const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
+            if (!isLoggedIn || !window.tapApi) {
+                showToast('error', 'Login required', 'Run Spring Boot and sign in to save addresses.');
+                return;
+            }
+            if (isLoggedIn && window.tapApi && addressApiMap[index]) {
+                try {
+                    await window.tapApi.addresses.remove(addressApiMap[index]);
+                    delete addressApiMap[index];
+                } catch (e) {
+                    showToast('error', 'Address could not be deleted', e.message || 'Please try again.');
+                    return;
+                }
+            }
             addresses.splice(index, 1);
+            addressApiMap = Object.fromEntries(Object.entries(addressApiMap)
+                .filter(([key]) => Number(key) !== index)
+                .map(([key, value]) => [Number(key) > index ? Number(key) - 1 : Number(key), value]));
             if (selectedAddressIndex === index) {
                 selectedAddressIndex = addresses.length ? 0 : null;
             } else if (selectedAddressIndex > index) {
                 selectedAddressIndex -= 1;
             }
-            persistAddresses();
             renderSavedAddresses();
             renderAddressPreview();
             updateSummary(Object.values(cartData));
@@ -1042,7 +1062,7 @@
         closeAddressModal.addEventListener('click', closeAddressForm);
         pageOverlay.addEventListener('click', closeAddressForm);
 
-        addressForm.addEventListener('submit', e => {
+        addressForm.addEventListener('submit', async e => {
             e.preventDefault();
             const address = {
                 fullName:   document.getElementById('fullName').value.trim(),
@@ -1051,7 +1071,26 @@
                 postalCode: document.getElementById('postalCode').value.trim(),
                 country:    document.getElementById('country').value.trim()
             };
-            if (editingAddressIndex !== null) {
+            const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
+            if (isLoggedIn && window.tapApi) {
+                try {
+                    const existingId = editingAddressIndex !== null ? addressApiMap[editingAddressIndex] : null;
+                    const saved = existingId
+                        ? await window.tapApi.addresses.update(existingId, { ...address, isDefault: editingAddressIndex === selectedAddressIndex })
+                        : await window.tapApi.addresses.add({ ...address, isDefault: addresses.length === 0 });
+                    if (editingAddressIndex !== null) {
+                        addresses[editingAddressIndex] = { ...address, id: saved.id, selected: saved.isDefault };
+                        addressApiMap[editingAddressIndex] = saved.id;
+                    } else {
+                        addresses.push({ ...address, id: saved.id, selected: saved.isDefault });
+                        addressApiMap[addresses.length - 1] = saved.id;
+                        selectedAddressIndex = addresses.length - 1;
+                    }
+                } catch (err) {
+                    showToast('error', 'Address could not be saved', err.message || 'Please try again.');
+                    return;
+                }
+            } else if (editingAddressIndex !== null) {
                 addresses[editingAddressIndex] = address;
                 showToast('success', 'Address updated', 'Your delivery address has been updated.');
             } else {
@@ -1059,6 +1098,7 @@
                 selectedAddressIndex = addresses.length - 1;
                 showToast('success', 'Address saved', 'New address added successfully.');
             }
+            if (isLoggedIn) showToast('success', editingAddressIndex !== null ? 'Address updated' : 'Address saved', 'Your delivery address has been saved.');
             persistAddresses();
             renderSavedAddresses();
             renderAddressPreview();
@@ -1097,12 +1137,8 @@
                 if (isLoggedIn && window.tapApi && pending.addressId) {
                     await window.tapApi.orders.place(pending.addressId, 'UPI');
                 } else {
-                    // fallback localStorage
-                    const existing = JSON.parse(localStorage.getItem('tapOrders') || '[]');
-                    existing.push(pending);
-                    localStorage.setItem('tapOrders', JSON.stringify(existing));
+                    throw new Error('Please sign in and select a saved address before paying.');
                 }
-                localStorage.removeItem('tapCart');
                 sessionStorage.removeItem('pendingOrder');
                 showToast('success', 'Order placed! 🎉', 'Redirecting to your orders…');
                 setTimeout(() => { window.location.href = 'Orders.html'; }, 1800);
@@ -1155,18 +1191,8 @@
                 try {
                     if (isLoggedIn && window.tapApi && addressApiMap[selectedAddressIndex]) {
                         await window.tapApi.orders.place(addressApiMap[selectedAddressIndex], 'COD');
-                        localStorage.removeItem('tapCart');
                     } else {
-                        // fallback: save to localStorage
-                        const newOrder = {
-                            id: `ORD-${Date.now()}`, placedAt: new Date().toISOString(),
-                            items: orderItems, total, subtotal, delivery,
-                            paymentMethod, address: selectedAddress, status: 'Pending'
-                        };
-                        const existing = JSON.parse(localStorage.getItem('tapOrders') || '[]');
-                        existing.push(newOrder);
-                        localStorage.setItem('tapOrders', JSON.stringify(existing));
-                        localStorage.removeItem('tapCart');
+                        throw new Error('Please sign in and select a saved address before checkout.');
                     }
                     showToast('success', 'Order placed! 🎉', 'Redirecting to your orders…');
                     setTimeout(() => { window.location.href = 'Orders.html'; }, 1800);

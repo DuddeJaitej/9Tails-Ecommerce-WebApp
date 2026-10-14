@@ -29,6 +29,8 @@ public class ProductRequest {
     @DecimalMin("0.0") @DecimalMax("5.0")
     private Double rating = 0.0;
 
+    private Boolean fastDelivery = true;
+
     @NotNull(message = "Category ID is required")
     private Long categoryId;
 }

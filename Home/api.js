@@ -1,6 +1,6 @@
-/**
+﻿/**
  * api.js  —  Centralized HTTP client for 9Tails ↔ Spring Boot API
- * Base URL: http://localhost:8080/api
+ * Base URL: http://localhost:8081/api
  * All functions return the `data` field from ApiResponse, or throw on error.
  */
 
@@ -16,8 +16,12 @@
 
     function authHeaders() {
         const t = getToken();
-        return t ? { 'Authorization': `Bearer ${t}`, 'Content-Type': 'application/json' }
-                 : { 'Content-Type': 'application/json' };
+        return t ? {
+            'Authorization': `Bearer ${t}`,
+            'Content-Type': 'application/json'
+        } : {
+            'Content-Type': 'application/json'
+        };
     }
 
     // ─── Core fetch wrapper ──────────────────────────────────────────────────
@@ -35,9 +39,38 @@
         const json = await res.json().catch(() => ({}));
 
         if (!res.ok) {
+            if (res.status === 401 && !path.startsWith('/auth/')) {
+                clearToken();
+                global.dispatchEvent(new CustomEvent('tap:unauthorized', {
+                    detail: { path }
+                }));
+            }
+            if (res.status === 401) {
+                throw new Error(json.message || 'Your session is invalid or has expired. Please sign in again.');
+            }
+            if (res.status === 403) {
+                throw new Error(json.message || 'Your account is not authorized to perform this action.');
+            }
             throw new Error(json.message || `HTTP ${res.status}`);
         }
         return json.data;          // unwrap ApiResponse<T>.data
+    }
+
+    async function getAllPages(fetchPage, pageSize = 100) {
+        const all = [];
+        let pageNumber = 0;
+        while (true) {
+            const page = await fetchPage(pageNumber, pageSize);
+            if (Array.isArray(page)) return all.concat(page);
+
+            const content = Array.isArray(page?.content) ? page.content : [];
+            all.push(...content);
+            if (page?.last === true || content.length === 0 ||
+                (page?.totalPages !== undefined && pageNumber + 1 >= page.totalPages)) {
+                return all;
+            }
+            pageNumber += 1;
+        }
     }
 
     const api = {
@@ -55,6 +88,9 @@
 
             login: (email, password) =>
                 api.post('/auth/login', { email, password }),
+
+            google: (accessToken) =>
+                api.post('/auth/google', { accessToken }),
         },
 
         // ── Products ─────────────────────────────────────────────────────────
@@ -62,8 +98,14 @@
             list:     (page = 0, size = 20, sort = 'newest') =>
                 api.get(`/products?page=${page}&size=${size}&sort=${sort}`),
 
+            listAll:   (size = 100, sort = 'newest') =>
+                getAllPages((page, pageSize) => api.products.list(page, pageSize, sort), size),
+
             byCategory: (cat, page = 0, size = 20, sort = 'newest') =>
                 api.get(`/products/category/${encodeURIComponent(cat)}?page=${page}&size=${size}&sort=${sort}`),
+
+            byCategoryAll: (cat, size = 100, sort = 'newest') =>
+                getAllPages((page, pageSize) => api.products.byCategory(cat, page, pageSize, sort), size),
 
             search:   (q, page = 0, size = 20) =>
                 api.get(`/products/search?q=${encodeURIComponent(q)}&page=${page}&size=${size}`),
@@ -82,7 +124,7 @@
         cart: {
             get:    ()                      => api.get('/cart'),
             add:    (productId, qty = 1)    => api.post(`/cart?productId=${productId}&quantity=${qty}`),
-            update: (productId, qty)        => api.patch(`/cart/${productId}?quantity=${qty}`),
+            update: (productId, qty)        => api.put(`/cart/${productId}?quantity=${qty}`),
             remove: (productId)             => api.del(`/cart/${productId}`),
             clear:  ()                      => api.del('/cart'),
         },
@@ -97,6 +139,8 @@
 
             get:      (id)  => api.get(`/orders/${id}`),
             cancel:   (id)  => api.patch(`/orders/${id}/cancel`),
+            cancelItem: (orderId, itemId) =>
+                api.patch(`/orders/${orderId}/items/${itemId}/cancel`),
             return:   (id)  => api.patch(`/orders/${id}/return`),
             exchange: (id)  => api.patch(`/orders/${id}/exchange`),
         },

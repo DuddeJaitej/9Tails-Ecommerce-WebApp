@@ -16,9 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 /**
- * Seeds DB on first run only (skips if categories already exist).
- * Each product has ONE image — the exact file that exists in Assets/Products/.
- * No gallery arrays — single image per product as requested.
+ * Reconciles the catalog on every startup without duplicating existing products.
+ * Each product uses the exact image file that exists in Assets/Products/.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,12 +32,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (productRepository.count() > 0) {
-            log.info("Database already seeded — skipping.");
-            return;
-        }
-
-        log.info("Seeding database...");
+        log.info("Synchronizing product catalog...");
 
         // ── Categories ────────────────────────────────────────────────────────
         Category fashion  = category("Fashion", "Clothing and apparel", "Assets/Products/Fashion/fashion1.avif");
@@ -176,18 +170,20 @@ public class DataInitializer implements CommandLineRunner {
 
     private void p(String name, String desc, long price, long orig, int stock,
                    String img, double rating, int reviews, Category cat) {
-        productRepository.save(Product.builder()
-                .name(name)
-                .description(desc)
-                .price(BigDecimal.valueOf(price))
-                .originalPrice(BigDecimal.valueOf(orig))
-                .stock(stock)
-                .imageUrl(img)
-                .galleryImages(null)   // single image only — no gallery
-                .rating(rating)
-                .reviewCount(reviews)
-                .category(cat)
-                .active(true)
-                .build());
+        Product product = productRepository.findByNameIgnoreCase(name)
+            .orElseGet(Product::new);
+        product.setName(name);
+        product.setDescription(desc);
+        product.setPrice(BigDecimal.valueOf(price));
+        product.setOriginalPrice(BigDecimal.valueOf(orig));
+        product.setStock(stock);
+        product.setImageUrl(img);
+        product.setGalleryImages(null);
+        product.setRating(rating);
+        product.setReviewCount(reviews);
+        product.setFastDelivery(stock > 0);
+        product.setCategory(cat);
+        product.setActive(true);
+        productRepository.save(product);
     }
 }

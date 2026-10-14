@@ -109,141 +109,133 @@ Ecommerce/
 
 ## Prerequisites
 
-- Java 21
-- Maven 3.9+
-- MySQL 8+
-- Python 3 (used by `start.ps1` for the static frontend server)
-- Git
+Install these tools before starting:
 
-## Download From GitHub
+- **Git** — to clone the repository.
+- **Java JDK 21** — verify with `java -version`.
+- **Apache Maven 3.9 or later** — verify with `mvn -version`.
+- **MySQL Server 8 or later** — the backend connects to MySQL on `localhost:3306`.
+- **Python 3** — used to serve the static frontend; verify with `python --version`.
+- **MySQL Workbench** (recommended) — an easy way to run the included database script.
 
-### Clone with Git
+The commands below use Windows PowerShell. On macOS or Linux, use your terminal and equivalent environment-variable syntax. The Windows `start.ps1` helper is optional; the manual steps work independently of it.
 
-Open PowerShell or a terminal and run:
+## Get the project
+
+Open PowerShell in the folder where you keep projects:
 
 ```powershell
 git clone https://github.com/DuddeJaitej/9Tails-Ecommerce-WebApp.git
 cd 9Tails-Ecommerce-WebApp
 ```
 
-To download the latest changes later:
+To get future updates:
 
 ```powershell
-git pull origin main
+git pull
 ```
 
-### Download as ZIP
+Alternatively, download the ZIP from the [GitHub repository](https://github.com/DuddeJaitej/9Tails-Ecommerce-WebApp), extract it, and open the extracted project folder in your terminal or editor. Git is recommended for easy updates.
 
-1. Open the [GitHub repository](https://github.com/DuddeJaitej/9Tails-Ecommerce-WebApp).
-2. Select **Code**, then choose **Download ZIP**.
-3. Extract the ZIP file.
-4. Open the extracted `9Tails-Ecommerce-WebApp` folder in VS Code.
+## Run locally
 
-Git is recommended because it makes future updates easier with `git pull`.
+The backend needs a running MySQL server. Start the backend and frontend in two separate terminals, and leave both running while using the app.
 
-## Configuration
+### 1. Create and seed the database
 
-The backend reads database and JWT settings from environment variables. Set them before starting Spring Boot:
+1. Start MySQL Server.
+2. Open `backend/database/schema.sql` in MySQL Workbench.
+3. Connect to your local MySQL server and execute the entire script.
+
+The script creates the `nintails_ecommerce` database, its tables, and sample data. The backend uses the local MySQL account `root` by default and updates the schema on startup.
+
+### 2. Configure and start the backend
+
+In the first PowerShell terminal, from the project root, set the database password and a local JWT signing key. Replace the database password with the one configured for your MySQL `root` account. Keep these values local; do not commit them.
 
 ```powershell
-$env:DB_PASSWORD = "your-local-mysql-password"
-$env:JWT_SECRET = "a-long-random-secret-at-least-32-characters"
+$env:DB_PASSWORD = "your-local-mysql-root-password"
+$env:JWT_SECRET = "replace-with-a-random-secret-at-least-32-characters-long"
 ```
 
-Never commit real passwords, API keys, or production JWT secrets. The checked-in configuration contains only development placeholders.
+If the local MySQL `root` account has no password, set `$env:DB_PASSWORD = ""`.
 
-## Running Locally
-
-### 1. Configure MySQL
-
-Make sure MySQL is running and execute `backend/database/schema.sql` in MySQL Workbench. The script creates the `nintails_ecommerce` database, tables, sample products, and the admin account.
-
-The backend uses these database settings:
-
-| Setting | Value |
-|---------|-------|
-| Host | `localhost:3306` |
-| Database | `nintails_ecommerce` |
-| Username | `root` |
-| Password | `$env:DB_PASSWORD` |
-
-The application also uses JPA `ddl-auto=update` to keep tables synchronized after the database exists.
-
-### 2. Set environment variables
-
-Run these commands in PowerShell before starting the backend. Replace the values with your local settings:
+Then start the Spring Boot API:
 
 ```powershell
-$env:DB_PASSWORD = "your-local-mysql-password"
-$env:JWT_SECRET = "a-long-random-secret-at-least-32-characters"
-```
-
-If your local MySQL `root` account has no password, use:
-
-```powershell
-$env:DB_PASSWORD = ""
-```
-
-### 3. Start the backend
-
-```bash
 cd backend
 mvn spring-boot:run
 ```
 
-The API runs at `http://localhost:8081/api`.
+On the first run, Maven downloads the backend dependencies. Wait for Spring Boot to report that it has started. The API base URL is `http://localhost:8081/api`.
 
-### 4. Start the frontend
+### 3. Start the frontend
 
-Open a second terminal in the project root and serve the static files so both `Home/` and `Assets/` resolve correctly:
+Open a **second** PowerShell terminal at the project root (the folder containing `Home` and `Assets`) and run:
 
-```bash
+```powershell
 python -m http.server 5500
 ```
 
-Open `http://localhost:5500/Home/Home.html` in a browser. Do not open the HTML file directly with `file://`, because the frontend needs a web server for images and API requests.
+Open [http://localhost:5500/Home/Home.html](http://localhost:5500/Home/Home.html) in your browser. Keep both terminals running. Do not open `Home/Home.html` directly using a `file://` URL; the local web server is needed for images and API requests.
 
-### 5. Start everything on Windows
+### Optional: Windows one-command launcher
 
-After setting the environment variables, run this from the project root:
+`start.ps1` can open the backend and frontend for you. First set `DB_PASSWORD` and `JWT_SECRET` in the PowerShell session, then run it from the project root:
 
 ```powershell
 .\start.ps1
 ```
 
-The script starts the MySQL service, Spring Boot on port `8081`, and the frontend on port `5500`. It works from any cloned repository location.
-
-If PowerShell blocks local scripts, run:
+The script expects a Windows MySQL service named `MySQL80` and the ports `8081` and `5500` to be available. It attempts to stop processes already listening on those ports, so use the manual steps above if you already have services running there. If PowerShell blocks the script, allow it only for the current session:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\start.ps1
 ```
 
-## Application URLs
+## Local URLs
 
 | Component | URL |
 |-----------|-----|
 | Storefront | http://localhost:5500/Home/Home.html |
 | API base URL | http://localhost:8081/api |
-| Product API | http://localhost:8081/api/products |
+| Product catalog API | http://localhost:8081/api/products |
 
-## API Endpoints
+## API overview
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | /auth/register | Public | Register user |
-| POST | /auth/login | Public | Login, get JWT |
-| GET | /products | Public | List products (paginated) |
-| GET | /products/{id} | Public | Single product |
-| GET | /cart | Required | Get cart |
-| POST | /cart | Required | Add to cart |
-| POST | /orders | Required | Place order |
-| GET | /orders | Required | My orders |
-| GET | /wishlist | Required | My wishlist |
+All endpoints are under `/api`. Endpoints marked **Authenticated** require a valid JWT.
 
-## Default Credentials
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| POST | `/api/auth/register` | Public | Register a user |
+| POST | `/api/auth/login` | Public | Sign in and receive a JWT |
+| POST | `/api/auth/google` | Public | Sign in with Google |
+| GET | `/api/products` | Public | List products |
+| GET | `/api/products/{id}` | Public | Get product details |
+| GET | `/api/cart` | Authenticated | Get the signed-in user's cart |
+| POST | `/api/cart` | Authenticated | Add an item to the cart |
+| POST | `/api/orders` | Authenticated | Place an order |
+| GET | `/api/orders` | Authenticated | List the signed-in user's orders |
+| GET | `/api/wishlist` | Authenticated | Get the signed-in user's wishlist |
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@9tails.com | Admin@123 |
+## Development admin account
+
+The included sample data provides a development admin account: `admin@9tails.com` / `Admin@123`. Use it only on a local development database, and change or remove it before deploying or exposing the application to other users. Never reuse this password in a production environment.
+
+## Troubleshooting
+
+- **Database connection fails:** confirm MySQL is running, the schema script completed, and `DB_PASSWORD` matches the local MySQL `root` password in the backend terminal.
+- **The storefront cannot load products:** keep the backend terminal running and check that `http://localhost:8081/api/products` opens.
+- **Images do not load:** make sure Python is serving from the repository root, not from inside `Home`.
+- **A port is already in use:** stop the application using port `8081` or `5500`, or use the manual startup steps after freeing the port.
+- **Google sign-in is unavailable:** configure a Google OAuth client for your local origin; browsing and other public catalog features do not require signing in.
+
+## Build and test the backend
+
+From the project root:
+
+```powershell
+cd backend
+mvn clean verify
+```

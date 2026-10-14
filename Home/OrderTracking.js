@@ -27,10 +27,7 @@
     if (cartToggle) cartToggle.addEventListener('click', () => { window.location.href = 'Cart.html'; });
 
     const cartCountEl = document.querySelector('.cart-count');
-    try {
-        const cartItems = JSON.parse(localStorage.getItem('tapCart') || '{}');
-        if (cartCountEl) cartCountEl.textContent = Object.values(cartItems).reduce((s, i) => s + (i.qty || 0), 0);
-    } catch (e) { if (cartCountEl) cartCountEl.textContent = '0'; }
+    if (cartCountEl && window.tapAuth) window.tapAuth.syncCartCountFromApi();
 
     /* ── Toast ── */
     function showToast(type, title, msg, ms) {
@@ -72,8 +69,9 @@
     function imgPath(p) {
         if (!p) return '';
         p = String(p).replace(/^\.\.\//, '');
-        if (!p.startsWith('/') && !p.startsWith('http')) p = '/' + p;
-        return p;
+        if (/^https?:\/\//i.test(p)) return p;
+        if (!p.startsWith('/')) p = '/' + p;
+        return p.split('/').map(encodeURIComponent).join('/');
     }
 
     function fmtDate(d) {
@@ -94,7 +92,7 @@
         return dd + '-' + mon + '-' + yr + ', ' + hh + ':' + mm + ':' + ss;
     }
 
-    /* ── Read order — API first, localStorage fallback ── */
+    /* ── Read order only from Spring Boot ── */
     var urlParams = new URLSearchParams(window.location.search);
     var orderId   = urlParams.get('id');
 
@@ -110,7 +108,6 @@
     async function loadOrder() {
         var isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
 
-        // ── Try API first ────────────────────────────────────────────────────
         if (isLoggedIn && window.tapApi) {
             try {
                 var apiOrder = await window.tapApi.orders.get(orderId);
@@ -125,30 +122,7 @@
             }
         }
 
-        // ── Fallback: localStorage ───────────────────────────────────────────
-        try { orders = JSON.parse(localStorage.getItem('tapOrders') || '[]'); } catch(e) {}
-
-        order = orders.find(function(o) { return o.id === orderId; });
-        if (!order) {
-            var decoded = decodeURIComponent(orderId);
-            order = orders.find(function(o) { return o.id === decoded; });
-        }
-
-        if (!order) {
-            showToast('error', 'Order not found', 'ID: ' + orderId);
-            var page = document.querySelector('.tracking-page');
-            if (page) {
-                page.innerHTML =
-                    '<div style="padding:48px 24px;text-align:center;display:grid;gap:20px;justify-items:center">' +
-                    '<div style="font-size:3rem">📦</div>' +
-                    '<h2 style="color:#7c616c">Order not found</h2>' +
-                    '<p style="color:#999">We could not find order <strong>#' + orderId + '</strong>.</p>' +
-                    '<a href="Orders.html" style="padding:14px 28px;background:linear-gradient(135deg,#ff76a4,#c97fa0);color:#fff;border-radius:999px;text-decoration:none;font-weight:700">← Back to Orders</a>' +
-                    '</div>';
-            }
-            return;
-        }
-        renderPage();
+        showToast('error', isLoggedIn ? 'Order not found' : 'Login required', 'Run Spring Boot and sign in to view this order.');
     }
 
     /* Convert Spring Boot API order shape → legacy shape used in this file */
@@ -176,7 +150,8 @@
                     img:      i.productImageUrl,
                     category: i.categoryName,
                     price:    Number(i.unitPrice),
-                    qty:      i.quantity
+                    qty:      i.quantity,
+                    cancelled: i.cancelled
                 };
             }),
             _apiId: o.id   // keep numeric ID for API calls
@@ -196,10 +171,10 @@
         return map[s] || s;
     }
 
-    /* save: update localStorage entry (API already persisted via PATCH call) */
+    /* Keep the API response in memory until the next API reload. */
     function saveOrders() {
         var idx = orders.findIndex(function(o) { return o.id === order.id; });
-        if (idx >= 0) { orders[idx] = order; localStorage.setItem('tapOrders', JSON.stringify(orders)); }
+        if (idx >= 0) orders[idx] = order;
     }
 
     /* ── renderPage: called after order is loaded ── */
@@ -331,12 +306,13 @@
                 var html = items.map(function(item, idx) {
                     var lineTotal = (item.price || 0) * (item.qty || 1);
                     return (
-                        '<div class="ot-product-row" data-idx="' + idx + '">' +
+                        '<div class="ot-product-row' + (item.cancelled ? ' cancelled' : '') + '" data-idx="' + idx + '">' +
                             '<div class="ot-product-main">' +
                                 '<img src="' + imgPath(item.img || '') + '" alt="' + (item.name || '') + '" class="ot-product-thumb" />' +
                                 '<div class="ot-product-info">' +
                                     '<strong>' + (item.name || 'Product') + '</strong>' +
                                     '<span>' + (item.category || '') + '</span>' +
+                                    (item.cancelled ? '<span class="ot-cancelled-badge">Cancelled</span>' : '') +
                                 '</div>' +
                                 '<div class="ot-product-price">' + fmt(lineTotal) + '</div>' +
                                 '<span class="ot-expand-arrow">▼</span>' +
@@ -433,7 +409,7 @@
     if (overlay)     overlay.addEventListener('click', closeModal);
     if (modalOk)     modalOk.addEventListener('click', function() { if (pendingAct) pendingAct(); closeModal(); });
 
-    /* ── Action button bindings (API-first, localStorage fallback) ── */
+    /* ── Action button bindings through Spring Boot ── */
     function bindActions(currentStatus) {
         var cancelBtn   = document.getElementById('cancelOrderBtn');
         var returnBtn   = document.getElementById('returnOrderBtn');
@@ -447,7 +423,10 @@
                         if (apiId && window.tapApi && window.tapAuth.isLoggedIn()) {
                             await window.tapApi.orders.cancel(apiId);
                         }
-                    } catch(e) { /* fallback */ }
+                    } catch(e) {
+                        showToast('error', 'Update failed', e.message || 'Run Spring Boot and try again.');
+                        return;
+                    }
                     order.status = 'Cancelled';
                     saveOrders();
                     showToast('success', 'Order cancelled', 'Your order has been cancelled.');
@@ -464,7 +443,10 @@
                         if (apiId && window.tapApi && window.tapAuth.isLoggedIn()) {
                             await window.tapApi.orders.return(apiId);
                         }
-                    } catch(e) { /* fallback */ }
+                    } catch(e) {
+                        showToast('error', 'Update failed', e.message || 'Run Spring Boot and try again.');
+                        return;
+                    }
                     order.returnRequested   = true;
                     order.returnRequestedAt = new Date().toISOString();
                     saveOrders();
@@ -481,7 +463,10 @@
                         if (apiId && window.tapApi && window.tapAuth.isLoggedIn()) {
                             await window.tapApi.orders.exchange(apiId);
                         }
-                    } catch(e) { /* fallback */ }
+                    } catch(e) {
+                        showToast('error', 'Update failed', e.message || 'Run Spring Boot and try again.');
+                        return;
+                    }
                     order.exchangeRequested   = true;
                     order.exchangeRequestedAt = new Date().toISOString();
                     saveOrders();
@@ -504,6 +489,8 @@
         }
         .ot-product-row:last-child { margin-bottom: 0; }
         .ot-product-row:hover { box-shadow: 0 6px 20px rgba(124,97,108,0.1); }
+        .ot-product-row.cancelled .ot-product-main { opacity: 0.68; }
+        .ot-cancelled-badge { color: #a83245 !important; font-weight: 700; }
         .ot-product-main {
             display: grid;
             grid-template-columns: 74px 1fr auto auto;

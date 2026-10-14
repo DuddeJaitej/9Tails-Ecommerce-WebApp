@@ -1,7 +1,5 @@
-// products array — loaded from API (with products-data.js as fallback)
-let products = (typeof window._productsData !== 'undefined')
-    ? window._productsData.map(normalizeProduct)
-    : [];
+// Products are loaded only from Spring Boot.
+let products = [];
 let productsFromApi = false;
 
 function normalizeProduct(product) {
@@ -19,8 +17,9 @@ function normalizeProduct(product) {
 function imgFix(p) {
     if (!p) return '';
     p = String(p).replace(/^\.\.\//, '');
+    if (p.startsWith('http')) return p;
     if (!p.startsWith('/') && !p.startsWith('http')) p = '/' + p;
-    return p;
+    return p.split('/').map(encodeURIComponent).join('/');
 }
 
 function getProductContent(page) {
@@ -33,39 +32,60 @@ function getProductContent(page) {
  * Load products from Spring Boot API.
  * Maps ProductDto → the shape used by renderProducts():
  *   { key, id, name, category, img, gallery, price, rating, reviews, inStock, description }
- * Falls back to the global products array from products-data.js if API is unreachable.
+ * Clears the catalog if Spring Boot is unreachable.
  */
 async function loadProductsFromApi() {
     try {
-        const page = await window.tapApi.products.list(0, 200, 'newest');
-        const content = getProductContent(page);
+        const content = await window.tapApi.products.listAll(100, 'newest');
+        products = [];
         if (content.length > 0) {
             productsFromApi = true;
-            products = content.map(p => ({
-                key:         String(p.id),
-                id:          p.id,
-                name:        p.name,
-                description: p.description || '',
-                category:    p.categoryName,
-                img:         imgFix(p.imageUrl),
-                gallery:     p.galleryImages || [],
-                price:       Number(p.price),
-                originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
-                rating:      p.rating || 4.0,
-                reviews:     p.reviewCount || 0,
-                inStock:     p.inStock,
-                stock:       p.stock
-            }));
+            products = content.map(mapApiProduct);
             // products loaded from API
         }
     } catch (e) {
-        console.warn('API unavailable — using local products-data.js:', e.message);
-        // products-data.js already set the global `products` array — nothing to do
+        console.warn('Spring Boot is unavailable:', e.message);
+        products = [];
     }
+    await loadCustomerState();
     renderProducts();
     renderCart();
     renderSavedAddresses();
 }
+
+async function loadCustomerState() {
+    if (!window.tapAuth?.isLoggedIn() || !window.tapApi) return;
+    try {
+        const summary = await window.tapApi.cart.get();
+        Object.keys(cart).forEach(key => delete cart[key]);
+        (summary.items || []).forEach(item => {
+            cart[String(item.productId)] = {
+                key: String(item.productId),
+                id: item.productId,
+                name: item.productName,
+                img: imgFix(item.productImageUrl),
+                category: item.categoryName || '',
+                price: Number(item.unitPrice),
+                qty: item.quantity,
+                inStock: item.inStock
+            };
+        });
+    } catch (e) {
+        console.warn('Cart could not be loaded:', e.message);
+    }
+    try {
+        const items = await window.tapApi.wishlist.list();
+        wishlist.splice(0, wishlist.length, ...items.map(mapApiProduct));
+    } catch (e) {
+        console.warn('Wishlist could not be loaded:', e.message);
+    }
+}
+
+window.addEventListener('tap:authenticated', async () => {
+    await loadCustomerState();
+    renderCart();
+    renderProducts();
+});
 
 
 const hero = document.querySelector('.hero');
@@ -105,8 +125,6 @@ if (heroTrack && heroDots) {
             updateCarousel();
         }, 4000);
     }
-
-    heroTrack.addEventListener('mouseenter', () => clearInterval(autoPlay));
     heroTrack.addEventListener('mouseleave', startAutoPlay);
     renderDots();
     updateCarousel();
@@ -126,32 +144,51 @@ const cartTotalEl = document.getElementById('cartTotal');
 const continueBtn = document.getElementById('continueBtn');
 const addressPanel = document.getElementById('addressPanel');
 const pageOverlay = document.getElementById('pageOverlay');
-const savedAddressesEl = document.getElementById('savedAddresses');
 const addressForm = document.getElementById('addressForm');
+const savedAddressesEl = document.getElementById('savedAddresses');
 const saveAddressToggle = document.getElementById('saveAddressToggle');
 
 let currentCategory = 'All';
 let filters = { price: 'all', inStock: false, fastDelivery: false };
 let sortBy = 'popular';
-const cart = JSON.parse(localStorage.getItem('tapCart') || '{}');
+const cart = {};
 let editedAddressIndex = null;
-const savedAddresses = JSON.parse(localStorage.getItem('tapAddresses') || '[]');
-const wishlistKey = 'tapWishlist';
-let wishlist = JSON.parse(localStorage.getItem(wishlistKey) || '[]');
+const savedAddresses = [];
+let wishlist = [];
 
-function updateWishlistStorage() {
-    localStorage.setItem(wishlistKey, JSON.stringify(wishlist));
-}
-
-function toggleWishlist(product) {
-    if (!product) return;
+async function toggleWishlist(product, button) {
+    if (!product) return null;
     const existingIndex = wishlist.findIndex(item => item.key === product.key);
-    if (existingIndex >= 0) {
-        wishlist.splice(existingIndex, 1);
-    } else {
-        wishlist.push({ ...product });
+    if (!window.tapAuth?.isLoggedIn()) {
+        window.tapAuth?.requestLogin('Log in to save products to your wishlist.');
+        return null;
     }
-    updateWishlistStorage();
+    if (!window.tapApi || !product.id) {
+        window.tapAuth?.notify('error', 'Wishlist is unavailable. Refresh the page and try again.');
+        return null;
+    }
+    if (button?.disabled) return null;
+    if (button) button.disabled = true;
+    try {
+        const result = await window.tapApi.wishlist.toggle(product.id);
+        const isAdded = result?.action ? result.action === 'added' : existingIndex < 0;
+        if (isAdded && existingIndex < 0) wishlist.push({ ...product });
+        if (!isAdded) {
+            const currentIndex = wishlist.findIndex(item => item.key === product.key);
+            if (currentIndex >= 0) wishlist.splice(currentIndex, 1);
+        }
+        return isAdded;
+    } catch (e) {
+        console.warn('Wishlist update failed:', e.message);
+        if (!window.tapAuth?.isLoggedIn()) {
+            window.tapAuth?.requestLogin('Your session expired. Sign in again to update your wishlist.');
+        } else {
+            window.tapAuth?.notify('error', e.message || 'Could not update your wishlist.');
+        }
+        return null;
+    } finally {
+        if (button) button.disabled = false;
+    }
 }
 
 // Renders a star rating row — full, half and empty stars
@@ -180,13 +217,13 @@ function getFilteredProducts() {
     return products
         .filter(product => {
             const categoryMatch = currentCategory === 'All' ||
-                String(product.category || '').toLowerCase() === currentCategory.toLowerCase();
+                String(product.category || '').trim().toLowerCase() === currentCategory.trim().toLowerCase();
             const stockMatch = !filters.inStock || product.inStock;
             const deliveryMatch = !filters.fastDelivery || product.fastDelivery;
             let priceMatch = true;
-            if (filters.price === 'under50') priceMatch = product.price < 50;
-            if (filters.price === '50to150') priceMatch = product.price >= 50 && product.price <= 150;
-            if (filters.price === 'above150') priceMatch = product.price > 150;
+            if (filters.price === 'under500') priceMatch = product.price < 500;
+            if (filters.price === '500to1000') priceMatch = product.price >= 500 && product.price <= 1000;
+            if (filters.price === 'above1000') priceMatch = product.price > 1000;
             return categoryMatch && stockMatch && deliveryMatch && priceMatch;
         })
         .sort((a, b) => {
@@ -206,12 +243,13 @@ function renderProducts() {
         const productKey = product.key;
         const rating = product.rating || 4.0;
         const reviews = product.reviews || 0;
+        const fallbackImage = (product.gallery || []).find(image => image && image !== product.img) || '';
         return `
             <article class="product-card" data-id="${productKey}">
             <div class="product-image-wrap product-image-clickable" data-id="${productKey}" role="button" tabindex="0" aria-label="View ${product.name} details">
-                <img src="${imgFix(product.img)}" alt="${product.name}" />
+                <img src="${product.img}" data-fallback="${fallbackImage}" alt="${product.name}" />
                 <div class="product-overlay-label">View Details</div>
-                <button class="wishlist-btn ${wishlist.some(item => item.key === product.key) ? 'active' : ''}" data-id="${productKey}" aria-label="Add to wishlist" type="button">♥</button>
+                <button class="wishlist-btn ${wishlist.some(item => item.key === product.key) ? 'active' : ''}" data-id="${productKey}" aria-label="${wishlist.some(item => item.key === product.key) ? 'Remove from wishlist' : 'Add to wishlist'}" aria-pressed="${wishlist.some(item => item.key === product.key)}" type="button">${wishlist.some(item => item.key === product.key) ? '♥' : '♡'}</button>
             </div>
             <div class="product-info">
                 <div class="product-info-text" data-id="${productKey}" role="button" tabindex="0" aria-label="View ${product.name} details">
@@ -233,6 +271,18 @@ function renderProducts() {
         `;
     }).join('');
 
+    productsGrid.querySelectorAll('img[data-fallback]').forEach(image => {
+        image.addEventListener('error', () => {
+            const fallback = image.dataset.fallback;
+            if (fallback && image.src !== new URL(fallback, window.location.href).href) {
+                image.src = fallback;
+            } else {
+                image.removeAttribute('src');
+                image.classList.add('image-unavailable');
+            }
+        }, { once: true });
+    });
+
     // Add-to-cart buttons
     productsGrid.querySelectorAll('.add-cart-btn').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -243,11 +293,20 @@ function renderProducts() {
 
     // Wishlist buttons
     productsGrid.querySelectorAll('.wishlist-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
+        button.addEventListener('click', async (e) => {
             e.stopPropagation();
             const product = products.find(item => item.key === button.dataset.id);
-            toggleWishlist(product);
-            renderProducts();
+            const isAdded = await toggleWishlist(product, button);
+            if (!product || isAdded === null) return;
+            button.classList.toggle('active', isAdded);
+            button.setAttribute('aria-pressed', String(isAdded));
+            button.setAttribute('aria-label', isAdded ? 'Remove from wishlist' : 'Add to wishlist');
+            button.textContent = isAdded ? '♥' : '♡';
+            if (isAdded) {
+                button.classList.remove('is-just-added');
+                void button.offsetWidth;
+                button.classList.add('is-just-added');
+            }
         });
     });
 
@@ -267,19 +326,23 @@ function renderProducts() {
 }
 
 function mapApiProduct(p) {
+    const gallery = Array.isArray(p.galleryImages)
+        ? p.galleryImages.filter(Boolean).map(imgFix)
+        : String(p.galleryImages || '').split(',').filter(Boolean).map(imgFix);
     return {
         key:          String(p.id),
         id:           p.id,
         name:         p.name,
         description:  p.description || '',
         category:     p.categoryName,
-        img:          imgFix(p.imageUrl),
-        gallery:      p.galleryImages || [],
+        img:          imgFix(p.imageUrl) || gallery[0] || '',
+        gallery,
         price:        Number(p.price),
         originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
         rating:       p.rating || 4.0,
         reviews:      p.reviewCount || 0,
-        inStock:      p.inStock,
+        inStock:      Boolean(p.inStock),
+        fastDelivery: p.fastDelivery === undefined ? Boolean(p.inStock) : Boolean(p.fastDelivery),
         stock:        p.stock
     };
 }
@@ -298,7 +361,7 @@ function animateAddToCartButton(button) {
 }
 
 function updateCartStorage() {
-    localStorage.setItem('tapCart', JSON.stringify(cart));
+    return cart;
 }
 
 function renderCart() {
@@ -340,36 +403,81 @@ function renderCart() {
     cartCountEl.textContent = count;
 }
 
-function addToCart(id, button) {
+async function addToCart(id, button) {
     const product = products.find(item => item.key === id);
     if (!product || !product.inStock) return;
+    if (!window.tapAuth?.isLoggedIn()) {
+        window.tapAuth?.requestLogin('Log in to add products to your cart.');
+        return;
+    }
+    if (!window.tapApi || !product.id) {
+        window.tapAuth?.notify('error', 'Cart is unavailable. Refresh the page and try again.');
+        return;
+    }
+    if (button?.disabled) return;
+    if (button) button.disabled = true;
 
-    // Optimistic local update
-    if (cart[id]) { cart[id].qty += 1; }
-    else { cart[id] = { ...product, qty: 1 }; }
-    updateCartStorage();
-    renderCart();
-    animateAddToCartButton(button);
-
-    // API call (non-blocking) — product.id is the numeric DB id
-    const numericId = product.id || product.key;
-    if (window.tapAuth && window.tapAuth.isLoggedIn() && window.tapApi) {
-        window.tapApi.cart.add(numericId, 1).catch(() => {/* ignore, local state already updated */});
+    try {
+        const summary = await window.tapApi.cart.add(product.id, 1);
+        Object.keys(cart).forEach(key => delete cart[key]);
+        (summary?.items || []).forEach(item => {
+            cart[String(item.productId)] = {
+                key: String(item.productId),
+                id: item.productId,
+                name: item.productName,
+                img: imgFix(item.productImageUrl),
+                category: item.categoryName || '',
+                price: Number(item.unitPrice),
+                qty: item.quantity,
+                inStock: item.inStock
+            };
+        });
+        updateCartStorage();
+        renderCart();
+        animateAddToCartButton(button);
+    } catch (e) {
+        console.warn('Cart add failed:', e.message);
+        if (!window.tapAuth?.isLoggedIn()) {
+            window.tapAuth?.requestLogin('Your session expired. Sign in again to add this product.');
+        } else {
+            window.tapAuth?.notify('error', e.message || 'Could not add this product to your cart.');
+        }
+    } finally {
+        if (button) button.disabled = !product.inStock;
     }
 }
 
-function removeCartItem(id) {
+async function removeCartItem(id) {
+    const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
+    if (isLoggedIn && window.tapApi) {
+        try { await window.tapApi.cart.remove(id); }
+        catch (e) { console.warn('Cart removal failed:', e.message); return; }
+    }
     delete cart[id];
     updateCartStorage();
     renderCart();
 }
 
-function changeQuantity(id, action) {
+async function changeQuantity(id, action) {
     if (!cart[id]) return;
+    const previousQty = cart[id].qty;
     if (action === 'increase') cart[id].qty += 1;
     if (action === 'decrease') {
         cart[id].qty -= 1;
         if (cart[id].qty <= 0) delete cart[id];
+    }
+    const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
+    if (isLoggedIn && window.tapApi) {
+        try {
+            if (cart[id]) await window.tapApi.cart.update(id, cart[id].qty);
+            else await window.tapApi.cart.remove(id);
+        } catch (e) {
+            if (cart[id]) cart[id].qty = previousQty;
+            else cart[id] = { ...products.find(item => item.key === id), qty: previousQty };
+            console.warn('Cart quantity update failed:', e.message);
+            renderCart();
+            return;
+        }
     }
     updateCartStorage();
     renderCart();
@@ -420,7 +528,6 @@ function editAddress(index) {
 
 function deleteAddress(index) {
     savedAddresses.splice(index, 1);
-    localStorage.setItem('tapAddresses', JSON.stringify(savedAddresses));
     renderSavedAddresses();
 }
 
@@ -445,7 +552,6 @@ addressForm.addEventListener('submit', event => {
     } else {
         if (saveAddressToggle.checked) { savedAddresses.push(address); }
     }
-    localStorage.setItem('tapAddresses', JSON.stringify(savedAddresses));
     renderSavedAddresses();
     addressForm.reset();
     // Address saved — no alert needed, the UI updates automatically
@@ -467,7 +573,7 @@ categoryButtons.forEach(button => {
     button.addEventListener('click', async () => {
         categoryButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
-        currentCategory = button.dataset.category;
+        currentCategory = (button.dataset.category || 'All').trim();
 
         // If products came from API, filter server-side for accuracy
         renderProducts();
@@ -475,11 +581,11 @@ categoryButtons.forEach(button => {
         if (productsFromApi && products.length > 0 && products[0].id) {
             try {
                 if (currentCategory === 'All') {
-                    const page = await window.tapApi.products.list(0, 200, sortBy === 'low' ? 'price-low' : sortBy === 'high' ? 'price-high' : 'newest');
-                    products = getProductContent(page).map(mapApiProduct);
+                    const content = await window.tapApi.products.listAll(100, sortBy === 'low' ? 'price-low' : sortBy === 'high' ? 'price-high' : 'newest');
+                    products = content.map(mapApiProduct);
                 } else {
-                    const page = await window.tapApi.products.byCategory(currentCategory, 0, 200, 'newest');
-                    products = getProductContent(page).map(mapApiProduct);
+                    const content = await window.tapApi.products.byCategoryAll(currentCategory, 100, 'newest');
+                    products = content.map(mapApiProduct);
                 }
                 renderProducts();
             } catch(e) { /* keep the immediately rendered catalog */ }

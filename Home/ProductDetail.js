@@ -8,8 +8,15 @@
     function imgFix(p) {
         if (!p) return '';
         p = p.replace(/^\.\.\//, '');          // strip ../
+        if (p.startsWith('http')) return p;
         if (!p.startsWith('/')) p = '/' + p;  // ensure leading /
-        return p;
+        return p.split('/').map(segment => {
+            try {
+                return encodeURIComponent(decodeURIComponent(segment));
+            } catch {
+                return encodeURIComponent(segment);
+            }
+        }).join('/');
     }
 
     function formatPrice(n) {
@@ -27,10 +34,9 @@
                s('star-empty','★').repeat(empty);
     }
 
-    // ── Read product — API first (by ?id=), fallback to ?key= from products-data.js ──
+    // ── Read product only from Spring Boot ──
     const params     = new URLSearchParams(window.location.search);
     const productId  = params.get('id');   // numeric DB id (from API-loaded pages)
-    const productKey = params.get('key');  // legacy string key (from products-data.js)
 
     // Show loading state
     const titleEl = document.getElementById('pdTitle');
@@ -53,8 +59,8 @@
                     img:          imgFix(dto.imageUrl),
                     // gallery: API returns string array
                     gallery:      Array.isArray(dto.galleryImages)
-                                    ? dto.galleryImages
-                                    : (dto.galleryImages || '').split(',').filter(Boolean),
+                                    ? dto.galleryImages.filter(Boolean).map(imgFix)
+                                    : (dto.galleryImages || '').split(',').filter(Boolean).map(imgFix),
                     price:        Number(dto.price),
                     originalPrice: dto.originalPrice ? Number(dto.originalPrice) : null,
                     rating:       dto.rating || 4.0,
@@ -72,31 +78,14 @@
                         price:    Number(p.price), rating: p.rating || 4.0,
                         reviews:  p.reviewCount || 0, inStock: p.inStock
                     }));
-                } catch(e) { window._relatedProducts = []; }
+                } catch (e) {
+                    window._relatedProducts = [];
+                    console.warn('Related products could not be loaded:', e.message);
+                }
 
             } catch(e) {
-                console.warn('API product fetch failed, trying local data:', e.message);
+                console.warn('Spring Boot product fetch failed:', e.message);
             }
-        }
-
-        // ── Fallback: products-data.js by key ──────────────────────────────
-        const localProducts = (window._productsData || []).map(p => ({
-            ...p,
-            key: String(p.key ?? p.id),
-            id: p.id ?? p.key,
-            img: imgFix(p.img),
-            gallery: (p.gallery || []).map(imgFix)
-        }));
-
-        if (!product && productKey) {
-            const local = localProducts.find(p => p.key === productKey);
-            if (local) product = local;
-        }
-
-        // ── Also try matching by id in local products array ────────────────
-        if (!product && productId) {
-            const local = localProducts.find(p => String(p.id) === String(productId) || p.key === String(productId));
-            if (local) product = local;
         }
 
         if (!product) {
@@ -138,6 +127,8 @@
         stockEl.textContent  = 'Out of Stock';
         stockEl.className    = 'pd-stock-badge out-stock';
     }
+    qs('#pdQtyInc').disabled = !product.inStock || product.stock <= 1;
+    qs('#pdQtyDec').disabled = true;
 
     const deliveryEl = qs('#pdDelivery');
     if (product.fastDelivery) {
@@ -153,18 +144,33 @@
 
     // Show only the one main product image
     const singleImg = imgFix(product.img || '');
-    const gallery = [singleImg].filter(Boolean);
+    const gallery = [...new Set([singleImg, ...(product.gallery || [])].filter(Boolean))];
     if (mainImageEl) {
         mainImageEl.src = singleImg;
         mainImageEl.alt = product.name;
+        mainImageEl.addEventListener('error', () => {
+            const fallback = gallery.find(src => src !== singleImg);
+            if (fallback && mainImageEl.src !== new URL(fallback, window.location.href).href) {
+                mainImageEl.src = fallback;
+            }
+        }, { once: true });
     }
 
-    // Hide the thumbnail strip entirely — single image per product
-    if (thumbnailsEl) thumbnailsEl.style.display = 'none';
-
-    // Also hide the gallery wrapper/sidebar if it exists
-    const galleryWrapper = qs('.pd-gallery-side, .pd-thumbnails-wrap, #pdThumbnails');
-    if (galleryWrapper) galleryWrapper.style.display = 'none';
+    if (thumbnailsEl) {
+        thumbnailsEl.innerHTML = gallery.map((src, index) => `
+            <button type="button" class="pd-thumb ${index === 0 ? 'active' : ''}" data-src="${src}" aria-label="View image ${index + 1}">
+                <img src="${src}" alt="${product.name} image ${index + 1}" />
+            </button>
+        `).join('');
+        thumbnailsEl.style.display = gallery.length > 1 ? '' : 'none';
+        thumbnailsEl.querySelectorAll('.pd-thumb').forEach(button => {
+            button.addEventListener('click', () => {
+                mainImageEl.src = button.dataset.src;
+                thumbnailsEl.querySelectorAll('.pd-thumb').forEach(item => item.classList.remove('active'));
+                button.classList.add('active');
+            });
+        });
+    }
 
     // ── Lightbox (zoom on click) ───────────────────────────────────────────────
     const lightbox       = qs('#pdLightbox');
@@ -199,28 +205,28 @@
     const qtyValEl = qs('#pdQtyVal');
 
     qs('#pdQtyInc').addEventListener('click', () => {
+        if (product.stock && qty >= product.stock) return;
         qty++;
         qtyValEl.textContent = qty;
+        qs('#pdQtyDec').disabled = qty <= 1;
+        qs('#pdQtyInc').disabled = Boolean(product.stock && qty >= product.stock);
     });
 
     qs('#pdQtyDec').addEventListener('click', () => {
-        if (qty > 1) { qty--; qtyValEl.textContent = qty; }
+        if (qty > 1) {
+            qty--;
+            qtyValEl.textContent = qty;
+            qs('#pdQtyDec').disabled = qty <= 1;
+            qs('#pdQtyInc').disabled = Boolean(product.stock && qty >= product.stock);
+        }
     });
 
     // ── Cart ──────────────────────────────────────────────────────────────────
-    const cart = JSON.parse(localStorage.getItem('tapCart') || '{}');
-    const cartCountEl = qs('.cart-count');
-
     function syncCartCount() {
-        const count = Object.values(cart).reduce((s, i) => s + (i.qty || 0), 0);
-        if (cartCountEl) cartCountEl.textContent = count;
+        if (window.tapAuth) return window.tapAuth.syncCartCountFromApi();
+        return Promise.resolve();
     }
     syncCartCount();
-
-    function saveCart() {
-        localStorage.setItem('tapCart', JSON.stringify(cart));
-        syncCartCount();
-    }
 
     const addCartBtn = qs('#pdAddCart');
 
@@ -229,25 +235,41 @@
         addCartBtn.textContent = 'Out of Stock';
     }
 
-    addCartBtn.addEventListener('click', () => {
+    addCartBtn.addEventListener('click', async () => {
         if (!product.inStock) return;
-        const key = product.key;
-        if (cart[key]) {
-            cart[key].qty += qty;
-        } else {
-            cart[key] = { ...product, qty };
+        const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
+        if (!isLoggedIn) {
+            window.tapAuth?.requestLogin('Log in to add this product to your cart.');
+            return;
         }
-        saveCart();
-
-        // Button feedback
-        const orig = addCartBtn.textContent;
-        addCartBtn.classList.add('is-success');
-        addCartBtn.innerHTML = '<span class="btn-checkmark">✓</span> Added to Cart';
-        clearTimeout(addCartBtn._timer);
-        addCartBtn._timer = setTimeout(() => {
-            addCartBtn.classList.remove('is-success');
-            addCartBtn.textContent = orig;
-        }, 1200);
+        if (!window.tapApi || !product.id) {
+            window.tapAuth?.notify('error', 'Cart is unavailable. Refresh the page and try again.');
+            return;
+        }
+        if (addCartBtn.disabled) return;
+        addCartBtn.disabled = true;
+        try {
+            await window.tapApi.cart.add(product.id, qty);
+            await syncCartCount();
+            const orig = addCartBtn.dataset.label || 'Add to Cart';
+            addCartBtn.dataset.label = orig;
+            addCartBtn.classList.add('is-success');
+            addCartBtn.innerHTML = '<span class="btn-checkmark">✓</span> Added to Cart';
+            clearTimeout(addCartBtn._timer);
+            addCartBtn._timer = setTimeout(() => {
+                addCartBtn.classList.remove('is-success');
+                addCartBtn.textContent = orig;
+            }, 1200);
+        } catch (e) {
+            console.error('Product could not be added to cart:', e.message);
+            if (!window.tapAuth?.isLoggedIn()) {
+                window.tapAuth?.requestLogin('Your session expired. Sign in again to add this product.');
+            } else {
+                window.tapAuth?.notify('error', e.message || 'Could not add this product to your cart.');
+            }
+        } finally {
+            addCartBtn.disabled = !product.inStock;
+        }
     });
 
     // Cart icon → cart page
@@ -257,41 +279,78 @@
     }
 
     // ── Wishlist ──────────────────────────────────────────────────────────────
-    const wishlist     = JSON.parse(localStorage.getItem('tapWishlist') || '[]');
     const wishlistBtn  = qs('#pdWishlist');
-    let isWishlisted   = wishlist.some(i => i.key === product.key);
+    let isWishlisted   = false;
+    let wishlistStatusRequest = 0;
 
     function updateWishlistBtn() {
         wishlistBtn.classList.toggle('active', isWishlisted);
         wishlistBtn.textContent = isWishlisted ? '♥ Wishlisted' : '♥ Wishlist';
+        wishlistBtn.setAttribute('aria-label', isWishlisted ? 'Remove from wishlist' : 'Add to wishlist');
         wishlistBtn.setAttribute('aria-pressed', String(isWishlisted));
     }
     updateWishlistBtn();
 
-    wishlistBtn.addEventListener('click', () => {
-        if (isWishlisted) {
-            const idx = wishlist.findIndex(i => i.key === product.key);
-            if (idx >= 0) wishlist.splice(idx, 1);
-        } else {
-            wishlist.push({ ...product });
+    async function refreshWishlistStatus() {
+        const requestId = ++wishlistStatusRequest;
+        if (!window.tapAuth?.isLoggedIn() || !window.tapApi || !product.id) {
+            isWishlisted = false;
+            updateWishlistBtn();
+            return;
         }
-        isWishlisted = !isWishlisted;
-        localStorage.setItem('tapWishlist', JSON.stringify(wishlist));
-        updateWishlistBtn();
+        try {
+            const result = await window.tapApi.wishlist.status(product.id);
+            if (requestId !== wishlistStatusRequest) return;
+            isWishlisted = Boolean(result?.wishlisted);
+            updateWishlistBtn();
+        } catch (e) {
+            if (requestId === wishlistStatusRequest) {
+                console.warn('Wishlist status could not be loaded:', e.message);
+            }
+        }
+    }
+    refreshWishlistStatus();
+    window.addEventListener('tap:authenticated', refreshWishlistStatus);
+
+    wishlistBtn.addEventListener('click', async () => {
+        const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
+        if (!isLoggedIn) {
+            window.tapAuth?.requestLogin('Log in to save this product to your wishlist.');
+            return;
+        }
+        if (!window.tapApi || !product.id) {
+            window.tapAuth?.notify('error', 'Wishlist is unavailable. Refresh the page and try again.');
+            return;
+        }
+        if (wishlistBtn.disabled) return;
+        wishlistBtn.disabled = true;
+        wishlistStatusRequest += 1;
+        try {
+            const result = await window.tapApi.wishlist.toggle(product.id);
+            isWishlisted = result?.action ? result.action === 'added' : !isWishlisted;
+            updateWishlistBtn();
+            if (isWishlisted) {
+                wishlistBtn.classList.remove('is-just-added');
+                void wishlistBtn.offsetWidth;
+                wishlistBtn.classList.add('is-just-added');
+                clearTimeout(wishlistBtn._timer);
+                wishlistBtn._timer = setTimeout(() => wishlistBtn.classList.remove('is-just-added'), 700);
+            }
+        } catch (e) {
+            console.error('Wishlist could not be updated:', e.message);
+            if (!window.tapAuth?.isLoggedIn()) {
+                window.tapAuth?.requestLogin('Your session expired. Sign in again to update your wishlist.');
+            } else {
+                window.tapAuth?.notify('error', e.message || 'Could not update your wishlist.');
+            }
+        } finally {
+            wishlistBtn.disabled = false;
+        }
     });
 
-    // ── Related products — use API data if available, else local filter ──────
+    // ── Related products loaded from the API ─────────────────────────────────
     const relatedGrid = qs('#pdRelatedGrid');
-    // API stores related in window._relatedProducts; fallback to local filter
-    const localProducts = (window._productsData || []).map(p => ({
-        ...p,
-        key: String(p.key ?? p.id),
-        id: p.id ?? p.key,
-        img: imgFix(p.img)
-    }));
-    const related = (window._relatedProducts && window._relatedProducts.length > 0)
-        ? window._relatedProducts.slice(0, 4)
-        : localProducts.filter(p => p.category === product.category && p.key !== product.key).slice(0, 4);
+    const related = (window._relatedProducts || []).slice(0, 4);
 
     if (related.length) {
         relatedGrid.innerHTML = related.map(p => `
@@ -337,22 +396,39 @@
 
         // Related add-to-cart
         relatedGrid.querySelectorAll('.related-cart-btn').forEach(btn => {
-            btn.addEventListener('click', e => {
+            btn.addEventListener('click', async e => {
                 e.stopPropagation();
                 const relProduct = related.find(p => p.key === btn.dataset.key);
                 if (!relProduct || !relProduct.inStock) return;
-                const k = relProduct.key;
-                if (cart[k]) { cart[k].qty += 1; } else { cart[k] = { ...relProduct, qty: 1 }; }
-                saveCart();
-                // API sync
-                if (window.tapAuth && window.tapAuth.isLoggedIn() && window.tapApi && relProduct.id) {
-                    window.tapApi.cart.add(relProduct.id, 1).catch(() => {});
+                if (!window.tapAuth?.isLoggedIn()) {
+                    window.tapAuth?.requestLogin('Log in to add this product to your cart.');
+                    return;
                 }
-                const orig = btn.textContent;
-                btn.classList.add('is-success');
-                btn.innerHTML = '<span class="btn-checkmark">✓</span> Added';
-                clearTimeout(btn._timer);
-                btn._timer = setTimeout(() => { btn.classList.remove('is-success'); btn.textContent = orig; }, 900);
+                if (!window.tapApi) {
+                    window.tapAuth?.notify('error', 'Cart is unavailable. Refresh the page and try again.');
+                    return;
+                }
+                if (btn.disabled) return;
+                btn.disabled = true;
+                try {
+                    await window.tapApi.cart.add(relProduct.id, 1);
+                    await syncCartCount();
+                    const orig = btn.dataset.label || 'Add to cart';
+                    btn.dataset.label = orig;
+                    btn.classList.add('is-success');
+                    btn.innerHTML = '<span class="btn-checkmark">✓</span> Added';
+                    clearTimeout(btn._timer);
+                    btn._timer = setTimeout(() => { btn.classList.remove('is-success'); btn.textContent = orig; }, 900);
+                } catch (e) {
+                    console.error('Related product could not be added to cart:', e.message);
+                    if (!window.tapAuth?.isLoggedIn()) {
+                        window.tapAuth?.requestLogin('Your session expired. Sign in again to add this product.');
+                    } else {
+                        window.tapAuth?.notify('error', e.message || 'Could not add this product to your cart.');
+                    }
+                } finally {
+                    btn.disabled = !relProduct.inStock;
+                }
             });
         });
     } else {

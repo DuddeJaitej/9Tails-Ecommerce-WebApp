@@ -2,6 +2,7 @@ package com.nintails.ecommerce.controller;
 
 import com.nintails.ecommerce.dto.ApiResponse;
 import com.nintails.ecommerce.dto.AuthResponse;
+import com.nintails.ecommerce.dto.GoogleLoginRequest;
 import com.nintails.ecommerce.dto.LoginRequest;
 import com.nintails.ecommerce.dto.RegisterRequest;
 import com.nintails.ecommerce.service.AuthService;
@@ -31,5 +32,12 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(
+            @Valid @RequestBody GoogleLoginRequest request) {
+        AuthResponse response = authService.loginWithGoogle(request);
+        return ResponseEntity.ok(ApiResponse.ok("Google login successful", response));
     }
 }
