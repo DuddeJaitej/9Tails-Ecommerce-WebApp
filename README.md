@@ -1,4 +1,4 @@
-<img width="1897" height="872" alt="Screenshot 2026-10-30 101307" src="https://github.com/user-attachments/assets/98fc0b5e-408d-46a4-9798-eec01312102a" /><img width="1897" height="872" alt="Screenshot 2026-10-30 101307" src="https://github.com/user-attachments/assets/4bca995d-0bab-4f93-ad2c-0927f471e9c0" /># 9Tails Ecommerce
+# 9Tails Ecommerce
 
 A full-stack ecommerce web application with a vanilla HTML/CSS/JavaScript storefront and a Spring Boot REST API backed by MySQL.
 
