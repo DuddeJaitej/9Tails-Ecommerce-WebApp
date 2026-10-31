@@ -1,13 +1,14 @@
 package com.nintails.ecommerce.security;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -21,8 +22,17 @@ public class JwtUtils {
     @Value("${app.jwt.expiration-ms}")
     private long jwtExpirationMs;
 
+    @PostConstruct
+    void validateJwtSecret() {
+        if (jwtSecret == null
+                || jwtSecret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException(
+                    "Invalid JWT signing secret: configure JWT_SECRET with at least 32 UTF-8 bytes.");
+        }
+    }
+
     private Key getSigningKey() {
-        byte[] keyBytes = jwtSecret.getBytes();
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

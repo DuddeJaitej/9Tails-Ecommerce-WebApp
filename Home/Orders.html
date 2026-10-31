@@ -42,11 +42,25 @@
                             <div class="profile-menu hidden" role="menu" aria-label="User menu">
                                 <div class="profile-menu-card">
                                     <p class="profile-menu-email"></p>
+                                    <a class="operations-dashboard-link hidden" href="Operations.html">Operations Dashboard</a>
                                     <button class="logout-btn" type="button">Logout</button>
                                 </div>
                             </div>
                         </li>
                     </ul>
+                </div>
+                <div class="notification-nav hidden" id="customerNotificationNav">
+                    <button class="notification-bell" id="customerNotificationBell" type="button" aria-label="Notifications" aria-expanded="false">
+                        <svg class="notification-bell-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                            <path d="M10 21h4" />
+                        </svg>
+                        <span class="notification-count hidden" id="customerNotificationCount">0</span>
+                    </button>
+                    <div class="notification-menu hidden" id="customerNotificationMenu" aria-label="Notifications">
+                        <div class="notification-menu-heading"><strong>Notifications</strong><button class="notification-mark-all" id="customerNotificationMarkAll" type="button">Mark all read</button></div>
+                        <div class="notification-menu-list" id="customerNotificationList"></div>
+                    </div>
                 </div>
             </nav>
         </div>
@@ -283,6 +297,7 @@
     </script>
     <script src="api.js"></script>
     <script src="auth.js"></script>
+    <script src="notifications.js"></script>
     <script>
         const navToggle = document.getElementById('navToggle');
         const navLinks = document.getElementById('navLinks');
@@ -321,6 +336,10 @@
         const cancelItemError = document.getElementById('cancelItemError');
         const cancelItemConfirm = document.getElementById('cancelItemConfirm');
         let itemPendingCancellation = null;
+        let ordersState = 'loading';
+        let ordersLoadError = '';
+        let wishlistState = 'loading';
+        let dataLoadSequence = 0;
 
         function closeCancelItemDialog() {
             if (cancelItemDialog.open) cancelItemDialog.close();
@@ -339,24 +358,50 @@
 
         // ── Load data only from Spring Boot ─────────────────────────────────
         async function loadAllData() {
+            const loadSequence = ++dataLoadSequence;
             const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
 
             // Cart count
             if (window.tapAuth) window.tapAuth.syncCartCountFromApi();
 
-            // ── Orders ──────────────────────────────────────────────────────
-            if (isLoggedIn && window.tapApi) {
-                try {
-                    const page = await window.tapApi.orders.list(0, 50);
-                    const apiOrders = (page.content || []).map(o => ({
+            if (!isLoggedIn || !window.tapApi) {
+                orders.splice(0, orders.length);
+                wishlist.splice(0, wishlist.length);
+                ordersState = 'signed-out';
+                wishlistState = 'signed-out';
+                renderOrders();
+                renderWishlist();
+                return;
+            }
+
+            orders.splice(0, orders.length);
+            wishlist.splice(0, wishlist.length);
+            ordersState = 'loading';
+            ordersLoadError = '';
+            wishlistState = 'loading';
+            renderOrders();
+            renderWishlist();
+
+            const ordersRequest = window.tapApi.orders.listAll(50).then(apiOrders => {
+                if (loadSequence !== dataLoadSequence) return;
+                orders.push(...apiOrders.map(o => ({
                         id:        o.orderNumber || String(o.id),
                         _apiId:    o.id,
                         placedAt:  o.placedAt,
+                        expectedDeliveryDate: o.expectedDeliveryDate,
+                        rawStatus: o.status,
                         status:    titleCaseStatus(o.status),
+                        paymentStatus: o.paymentStatus || 'PENDING',
                         total:     Number(o.total),
                         subtotal:  Number(o.subtotal),
                         delivery:  Number(o.deliveryCharge),
                         paymentMethod: (o.paymentMethod || 'COD').toLowerCase(),
+                        fulfillments: (o.fulfillments || []).map(fulfillment => ({
+                            status: fulfillment.status || 'AWAITING_OWNER_CONFIRMATION',
+                            ownerName: fulfillment.ownerName || 'Seller',
+                            expectedDeliveryDate: fulfillment.expectedDeliveryDate,
+                            items: (fulfillment.items || []).map(item => item.productName).filter(Boolean)
+                        })),
                         items: (o.items || []).map(i => ({
                             _apiId:   i.id,
                             name:     i.productName,
@@ -364,7 +409,10 @@
                             category: i.categoryName,
                             price:    Number(i.unitPrice),
                             qty:      i.quantity,
-                            cancelled: i.cancelled
+                            cancelled: i.cancelled,
+                            fulfillmentStatus: i.fulfillmentStatus,
+                            rating: i.rating,
+                            reviewText: i.reviewText
                         })),
                         address: {
                             fullName:   o.addressFullName,
@@ -373,34 +421,38 @@
                             postalCode: o.addressPostalCode,
                             country:    o.addressCountry
                         }
-                    }));
-                    orders.push(...apiOrders);
-                } catch(e) {
-                    orders.length = 0;
-                }
-            }
+                    })));
+                ordersState = 'ready';
+            }).catch(error => {
+                if (loadSequence !== dataLoadSequence) return;
+                ordersState = 'error';
+                ordersLoadError = error.message || 'The order history request failed.';
+                console.error('Recent orders could not be loaded:', error);
+            });
 
-            // ── Wishlist ────────────────────────────────────────────────────
-            if (isLoggedIn && window.tapApi) {
-                try {
-                    const apiWishlist = await window.tapApi.wishlist.list();
-                    // API returns ProductDto array
-                    const mapped = (apiWishlist || []).map(p => ({
+            const wishlistRequest = window.tapApi.wishlist.list().then(apiWishlist => {
+                if (loadSequence !== dataLoadSequence) return;
+                const mapped = (apiWishlist || []).map(p => ({
                         key:      String(p.id),
                         _apiId:   p.id,
                         name:     p.name,
                         img:      p.imageUrl || '',
                         category: p.categoryName || '',
                         price:    Number(p.price),
-                        rating:   p.rating || 4.0,
+                        rating:   Number(p.rating) || 0,
+                        reviews:  p.reviewCount || 0,
                         inStock:  p.inStock
                     }));
-                    wishlist.push(...mapped);
-                } catch(e) {
-                    wishlist.length = 0;
-                }
-            }
+                wishlist.push(...mapped);
+                wishlistState = 'ready';
+            }).catch(error => {
+                if (loadSequence !== dataLoadSequence) return;
+                wishlistState = 'error';
+                console.error('Wishlist could not be loaded:', error);
+            });
 
+            await Promise.all([ordersRequest, wishlistRequest]);
+            if (loadSequence !== dataLoadSequence) return;
             renderOrders();
             renderWishlist();
         }
@@ -417,6 +469,17 @@
 
         function formatPrice(value) {
             return `₹${Number(value).toFixed(2)}`;
+        }
+
+        function reloadIfSessionChanged() {
+            if (!window.tapAuth?.isLoggedIn() ||
+                    (ordersState !== 'signed-out' && wishlistState !== 'signed-out')) {
+                return false;
+            }
+            ordersState = 'loading';
+            wishlistState = 'loading';
+            window.setTimeout(loadAllData, 0);
+            return true;
         }
 
         // Normalize image path for Python root server (strip leading ../)
@@ -440,9 +503,150 @@
             return `${dd}-${mon}-${yr}, ${hh}:${mm}:${ss}`;
         }
 
+        function escapeOrderText(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+        }
+
+        function getExpectedDeliveryDate(order) {
+            const fulfillmentDates = (order.fulfillments || [])
+                .map(fulfillment => new Date(fulfillment.expectedDeliveryDate))
+                .filter(date => !isNaN(date.getTime()))
+                .sort((a, b) => a - b);
+            if (fulfillmentDates.length) return fulfillmentDates[0];
+            const orderDate = new Date(order.expectedDeliveryDate);
+            if (!isNaN(orderDate.getTime())) return orderDate;
+
+            const placedDate = new Date(order.placedAt);
+            if (isNaN(placedDate.getTime())) return null;
+            placedDate.setDate(placedDate.getDate() + 5);
+            return placedDate;
+        }
+
+        function fulfillmentProgressLabel(status) {
+            return ({
+                AWAITING_OWNER_CONFIRMATION: 'Awaiting seller confirmation',
+                CONFIRMED: 'Confirmed by seller',
+                PICKED_UP_FROM_OWNER: 'Picked up from seller',
+                PACKED_READY: 'Received at warehouse',
+                OUT_FOR_DELIVERY: 'Out for delivery',
+                DELIVERY_CONFIRMATION_PENDING: 'Awaiting your delivery confirmation',
+                DELIVERED: 'Delivered',
+                REJECTED: 'Rejected by seller',
+                CANCELLED: 'Cancelled'
+            })[status] || String(status || 'In progress').replaceAll('_', ' ');
+        }
+
+        function fulfillmentProgressIndex(status) {
+            return ({
+                AWAITING_OWNER_CONFIRMATION: 0,
+                CONFIRMED: 0,
+                PICKED_UP_FROM_OWNER: 1,
+                PACKED_READY: 2,
+                OUT_FOR_DELIVERY: 3,
+                DELIVERY_CONFIRMATION_PENDING: 3,
+                DELIVERED: 4
+            })[status] ?? 0;
+        }
+
+        function isOrderDelivered(order) {
+            const fulfillments = order.fulfillments || [];
+            return order.rawStatus === 'DELIVERED' ||
+                (fulfillments.length > 0 && fulfillments.every(fulfillment => fulfillment.status === 'DELIVERED'));
+        }
+
+        function renderOrderShippingProgress(order) {
+            const fulfillments = order.fulfillments || [];
+            const delivered = isOrderDelivered(order);
+            const successMessage = delivered
+                ? '<p class="order-delivery-success"><span aria-hidden="true">✓</span> Congratulations! Your order was delivered successfully.</p>'
+                : '';
+            if (!fulfillments.length) {
+                return `<section class="order-shipping-progress" aria-label="Shipping progress">
+                    <h4>Shipping Progress</h4>
+                    <p>${escapeOrderText(fulfillmentProgressLabel(order.rawStatus))}</p>
+                    ${successMessage}
+                </section>`;
+            }
+
+            return `<section class="order-shipping-progress" aria-label="Shipping progress">
+                <h4>Shipping Progress</h4>
+                ${fulfillments.map(fulfillment => {
+                    const terminal = ['REJECTED', 'CANCELLED'].includes(fulfillment.status);
+                    const productNames = fulfillment.items.join(', ');
+                    const packageLabel = `${fulfillment.ownerName}${productNames ? ` · ${productNames}` : ''}`;
+                    const currentStep = fulfillmentProgressIndex(fulfillment.status);
+                    const packageDelivered = fulfillment.status === 'DELIVERED';
+                    return `<div class="order-shipping-package">
+                        <div class="order-shipping-package-heading">
+                            <strong>${escapeOrderText(packageLabel)}</strong>
+                            <span class="order-shipping-status${terminal ? ' is-terminal' : ''}">
+                                ${escapeOrderText(fulfillmentProgressLabel(fulfillment.status))}
+                            </span>
+                        </div>
+                        ${terminal ? '' : `<ol class="order-shipping-steps" aria-label="Shipping stages for ${escapeOrderText(packageLabel)}">
+                            ${['Seller', 'Pickup', 'Warehouse', 'Delivery', 'Delivered'].map((step, index) => {
+                                const complete = packageDelivered || index < currentStep;
+                                const current = !complete && index === currentStep;
+                                return `<li class="${complete ? 'is-complete' : ''}${current ? ' is-current' : ''}">
+                                    ${complete ? '<span class="order-shipping-step-check" aria-hidden="true">✓</span>' : ''}${step}
+                                </li>`;
+                            }).join('')}
+                        </ol>`}
+                    </div>`;
+                }).join('')}
+                ${successMessage}
+            </section>`;
+        }
+
         function renderOrders() {
+            if (reloadIfSessionChanged()) {
+                ordersList.innerHTML = '<div class="empty-state"><div class="empty-state-copy"><h4>Loading your recent orders…</h4><p>Your order history will appear here.</p></div></div>';
+                return;
+            }
+            if (ordersState === 'loading') {
+                ordersList.innerHTML = '<div class="empty-state"><div class="empty-state-copy"><h4>Loading your recent orders…</h4><p>Your order history will appear here.</p></div></div>';
+                return;
+            }
+            if (ordersState === 'signed-out') {
+                ordersList.innerHTML = `
+                    <div class="empty-state">
+                        <img src="../Assets/EmptyStates/empty-orders.svg" alt="" />
+                        <div class="empty-state-copy">
+                            <h4>Sign in to see your orders</h4>
+                            <p>Your placed orders and delivery updates are saved to your account.</p>
+                            <button class="empty-state-action" type="button" data-empty-action="login">Sign in</button>
+                        </div>
+                    </div>`;
+                return;
+            }
+            if (ordersState === 'error') {
+                ordersList.innerHTML = `
+                    <div class="empty-state empty-state-error">
+                        <img src="../Assets/EmptyStates/empty-orders.svg" alt="" />
+                        <div class="empty-state-copy">
+                            <h4>Recent orders are temporarily unavailable</h4>
+                            <p>We couldn’t retrieve your saved orders. ${escapeOrderText(ordersLoadError)} Try again to load your latest order history.</p>
+                            <button class="empty-state-action" type="button" data-empty-action="retry-orders">Try again</button>
+                        </div>
+                    </div>`;
+                return;
+            }
             if (!orders.length) {
-                ordersList.innerHTML = '<div class="empty-state">No orders yet. Place an order from the cart page to see tracking here.</div>';
+                ordersList.innerHTML = `
+                    <div class="empty-state">
+                        <img src="../Assets/EmptyStates/empty-orders.svg" alt="" />
+                        <div class="empty-state-copy">
+                            <h4>No orders yet</h4>
+                            <p>When you place an order, its tracking and delivery updates will appear here.</p>
+                            <a class="empty-state-action" href="Home.html">Explore the shop</a>
+                        </div>
+                    </div>`;
                 return;
             }
 
@@ -456,24 +660,23 @@
             });
 
             ordersList.innerHTML = sorted.map(order => {
-                // Calculate delivery date: booking date + 5 days
-                const placedMs    = new Date(order.placedAt);
-                const placedTime  = isNaN(placedMs.getTime()) ? Date.now() : placedMs.getTime();
-                const deliveryDate = new Date(placedTime + 5 * 24 * 60 * 60 * 1000);
-                const deliveryDateStr = deliveryDate.toLocaleDateString('en-IN', { 
+                const deliveryDate = getExpectedDeliveryDate(order);
+                const deliveryDateStr = deliveryDate ? deliveryDate.toLocaleDateString('en-IN', {
                     day: '2-digit', 
                     month: 'short', 
                     year: 'numeric' 
-                });
+                }) : 'Pending seller confirmation';
 
                 // Determine status for badge
                 const status = order.status || 'Pending';
                 const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+                const paymentStatus = String(order.paymentStatus || 'PENDING').replaceAll('_', ' ');
+                const paymentClass = paymentStatus.toLowerCase().replace(/\s+/g, '-');
 
                 const canCancelItems = ['Pending', 'Confirmed', 'Packed & Ready'].includes(status);
 
                 return `
-                    <article class="order-card" onclick="window.location.href='OrderTracking.html?id=${encodeURIComponent(order._apiId || order.id)}'">
+                    <article class="order-card" onclick="if (!event.target.closest('.order-item-rating')) window.location.href='OrderTracking.html?id=${encodeURIComponent(order._apiId || order.id)}'">
                         <div class="order-card-header">
                             <div class="order-card-header-left">
                                 <div class="order-card-header-top">
@@ -485,6 +688,9 @@
                                     <span class="order-delivery-date">
                                         <span class="icon">📦</span>
                                         Expected by: ${deliveryDateStr}
+                                    </span>
+                                    <span class="order-payment-status payment-${paymentClass}">
+                                        Payment: ${paymentStatus}
                                     </span>
                                 </div>
                             </div>
@@ -501,6 +707,26 @@
                                         <div class="order-item-cancel-info">
                                             <strong>${item.name}</strong>
                                             <span>${item.qty} × ${formatPrice(item.price)}</span>
+                                            ${item.fulfillmentStatus === 'DELIVERED' && !item.cancelled
+                                                ? `<div class="order-item-rating">
+                                                    <span class="order-item-rating-label">Rate this product</span>
+                                                    <div class="order-rating-stars" role="group" aria-label="Rate ${escapeOrderText(item.name)}">
+                                                        ${[1, 2, 3, 4, 5].map(star => `<button class="order-rating-star${star <= (item.rating || 0) ? ' is-selected' : ''}"
+                                                            type="button" data-order-id="${order._apiId}" data-item-id="${item._apiId}" data-rating="${star}"
+                                                            aria-label="${star} ${star === 1 ? 'star' : 'stars'}" aria-pressed="${star === item.rating}">
+                                                            ★
+                                                        </button>`).join('')}
+                                                    </div>
+                                                    <textarea class="order-review-text" maxlength="1000" rows="3"
+                                                        placeholder="Share your opinion about this product"
+                                                        aria-label="Write a review for ${escapeOrderText(item.name)}">${escapeOrderText(item.reviewText || '')}</textarea>
+                                                    <button class="order-review-submit" type="button"
+                                                        data-order-id="${order._apiId}" data-item-id="${item._apiId}">
+                                                        ${item.reviewText ? 'Update review' : 'Submit review'}
+                                                    </button>
+                                                    <span class="order-rating-feedback" aria-live="polite">${item.reviewText ? 'Thanks for sharing your review!' : 'Choose stars and write a review.'}</span>
+                                                </div>`
+                                                : ''}
                                         </div>
                                         ${item.cancelled
                                             ? '<span class="order-item-cancelled">Cancelled</span>'
@@ -514,12 +740,70 @@
                                 `;
                             }).join('')}
                         </div>
+                        ${renderOrderShippingProgress(order)}
                     </article>
                 `;
             }).join('');
         }
 
         ordersList.addEventListener('click', async event => {
+            const ratingButton = event.target.closest('.order-rating-star');
+            if (ratingButton) {
+                event.preventDefault();
+                event.stopPropagation();
+                const ratingGroup = ratingButton.parentElement;
+                const selectedRating = Number(ratingButton.dataset.rating);
+                ratingGroup.dataset.selectedRating = String(selectedRating);
+                ratingGroup.querySelectorAll('.order-rating-star').forEach(button => {
+                    const selected = Number(button.dataset.rating) <= selectedRating;
+                    button.classList.toggle('is-selected', selected);
+                    button.setAttribute('aria-pressed', String(Number(button.dataset.rating) === selectedRating));
+                });
+                ratingButton.closest('.order-item-rating').querySelector('.order-rating-feedback').textContent =
+                    'Add a short review, then submit.';
+                return;
+            }
+
+            const reviewButton = event.target.closest('.order-review-submit');
+            if (reviewButton) {
+                event.preventDefault();
+                event.stopPropagation();
+                const order = orders.find(item => String(item._apiId) === reviewButton.dataset.orderId);
+                const orderItem = order?.items.find(item => String(item._apiId) === reviewButton.dataset.itemId);
+                const ratingContainer = reviewButton.closest('.order-item-rating');
+                const ratingGroup = ratingContainer.querySelector('.order-rating-stars');
+                const rating = Number(ratingGroup.dataset.selectedRating || orderItem?.rating || 0);
+                const reviewText = ratingContainer.querySelector('.order-review-text').value.trim();
+                const feedback = ratingContainer.querySelector('.order-rating-feedback');
+                if (!order || !orderItem || !window.tapApi) return;
+                if (!rating) {
+                    feedback.textContent = 'Choose a star rating first.';
+                    return;
+                }
+                if (!reviewText) {
+                    feedback.textContent = 'Write a short review before submitting.';
+                    ratingContainer.querySelector('.order-review-text').focus();
+                    return;
+                }
+                reviewButton.disabled = true;
+                ratingContainer.querySelectorAll('.order-rating-star').forEach(button => { button.disabled = true; });
+                feedback.textContent = 'Saving your review…';
+                try {
+                    await window.tapApi.orders.rateItem(
+                        order._apiId, orderItem._apiId, rating, reviewText);
+                    orderItem.rating = rating;
+                    orderItem.reviewText = reviewText;
+                    feedback.textContent = 'Thanks for sharing your review!';
+                    reviewButton.textContent = 'Update review';
+                } catch (error) {
+                    feedback.textContent = error.message || 'Your rating could not be saved. Please try again.';
+                } finally {
+                    reviewButton.disabled = false;
+                    ratingContainer.querySelectorAll('.order-rating-star').forEach(button => { button.disabled = false; });
+                }
+                return;
+            }
+
             const button = event.target.closest('.order-item-cancel-btn');
             if (!button) return;
             event.preventDefault();
@@ -562,7 +846,10 @@
                     category: item.categoryName,
                     price: Number(item.unitPrice),
                     qty: item.quantity,
-                    cancelled: item.cancelled
+                    cancelled: item.cancelled,
+                    fulfillmentStatus: item.fulfillmentStatus,
+                    rating: item.rating,
+                    reviewText: item.reviewText
                 }));
                 renderOrders();
                 closeCancelItemDialog();
@@ -615,16 +902,57 @@
         }
 
         function renderStarsSmall(rating) {
-            const full = Math.floor(rating || 4);
-            const half = ((rating || 4) % 1) >= 0.5 ? 1 : 0;
+            const score = Number(rating) || 0;
+            const full = Math.floor(score);
+            const half = (score % 1) >= 0.5 ? 1 : 0;
             const empty = 5 - full - half;
             const s = (cls, ch) => `<span class="${cls}">${ch}</span>`;
             return s('star-full','★').repeat(full) + (half ? s('star-half','★') : '') + s('star-empty','★').repeat(empty);
         }
 
         function renderWishlist() {
+            if (reloadIfSessionChanged()) {
+                wishlistList.innerHTML = '<div class="empty-state empty-state-wishlist"><div class="empty-state-copy"><h4>Loading your wishlist…</h4><p>Your saved favorites will appear here.</p></div></div>';
+                return;
+            }
+            if (wishlistState === 'loading') {
+                wishlistList.innerHTML = '<div class="empty-state empty-state-wishlist"><div class="empty-state-copy"><h4>Loading your wishlist…</h4><p>Your saved favorites will appear here.</p></div></div>';
+                return;
+            }
+            if (wishlistState === 'signed-out') {
+                wishlistList.innerHTML = `
+                    <div class="empty-state empty-state-wishlist">
+                        <img src="../Assets/EmptyStates/empty-wishlist.svg" alt="" />
+                        <div class="empty-state-copy">
+                            <h4>Sign in to see your wishlist</h4>
+                            <p>Your saved favorites are linked to your account.</p>
+                            <button class="empty-state-action" type="button" data-empty-action="login">Sign in</button>
+                        </div>
+                    </div>`;
+                return;
+            }
+            if (wishlistState === 'error') {
+                wishlistList.innerHTML = `
+                    <div class="empty-state empty-state-error empty-state-wishlist">
+                        <img src="../Assets/EmptyStates/empty-wishlist.svg" alt="" />
+                        <div class="empty-state-copy">
+                            <h4>Wishlist is temporarily unavailable</h4>
+                            <p>We couldn’t retrieve your saved favorites. Try again in a moment.</p>
+                            <button class="empty-state-action" type="button" data-empty-action="retry-wishlist">Try again</button>
+                        </div>
+                    </div>`;
+                return;
+            }
             if (!wishlist.length) {
-                wishlistList.innerHTML = '<div class="empty-state">Your wishlist is empty. Add favorites from the home page.</div>';
+                wishlistList.innerHTML = `
+                    <div class="empty-state empty-state-wishlist">
+                        <img src="../Assets/EmptyStates/empty-wishlist.svg" alt="" />
+                        <div class="empty-state-copy">
+                            <h4>Your wishlist is waiting for favorites</h4>
+                            <p>Save products you love and they’ll be ready for you here.</p>
+                            <a class="empty-state-action" href="Home.html">Discover favorites</a>
+                        </div>
+                    </div>`;
                 return;
             }
 
@@ -640,7 +968,7 @@
                         <p>${item.category}</p>
                         <div class="wishlist-rating">
                             <span class="stars">${renderStarsSmall(item.rating)}</span>
-                            <span class="rating-score">${(item.rating || 4).toFixed(1)}</span>
+                            <span class="rating-score">${item.reviews ? Number(item.rating).toFixed(1) : '—'}</span>
                         </div>
                         <strong>${formatPrice(item.price)}</strong>
                     </div>
@@ -665,6 +993,29 @@
                 });
             });
         }
+
+        ordersList.addEventListener('click', event => {
+            const action = event.target.closest('[data-empty-action]');
+            if (!action) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (action.dataset.emptyAction === 'login') {
+                document.querySelector('.login')?.click();
+            } else if (action.dataset.emptyAction === 'retry-orders') {
+                loadAllData();
+            }
+        });
+
+        wishlistList.addEventListener('click', event => {
+            const action = event.target.closest('[data-empty-action]');
+            if (!action) return;
+            event.preventDefault();
+            if (action.dataset.emptyAction === 'login') {
+                document.querySelector('.login')?.click();
+            } else if (action.dataset.emptyAction === 'retry-wishlist') {
+                loadAllData();
+            }
+        });
 
         function setActiveView(view) {
             const showOrders = view === 'orders';
@@ -714,6 +1065,16 @@
 
         updateCartCount();
         // ── Init: load everything from Spring Boot ─────────────────────────
+        window.addEventListener('tap:authenticated', loadAllData);
+        window.addEventListener('tap:unauthorized', () => {
+            dataLoadSequence += 1;
+            orders.splice(0, orders.length);
+            wishlist.splice(0, wishlist.length);
+            ordersState = 'signed-out';
+            wishlistState = 'signed-out';
+            renderOrders();
+            renderWishlist();
+        });
         loadAllData();
         setActiveView('orders');
     </script>
@@ -739,7 +1100,6 @@
         </div>
         <div class="footer-bottom">
             <span>© 2026 9Tails. All rights reserved.</span>
-            <span>Made with ♥ in Bangalore</span>
         </div>
     </footer>
 </body>

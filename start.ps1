@@ -96,6 +96,6 @@ Write-Host "  All systems running!" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Backend  : http://localhost:8081/api" -ForegroundColor White
 Write-Host "  Frontend : http://localhost:5500/Home/Home.html" -ForegroundColor White
-Write-Host "  Admin    : admin@9tails.com / Admin@123" -ForegroundColor White
+Write-Host "  Admin    : configure ADMIN_EMAIL and ADMIN_PASSWORD in backend/.env" -ForegroundColor White
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""

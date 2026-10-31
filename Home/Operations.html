@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#172124">
+    <title>Operations Studio — 9Tails</title>
+    <link rel="icon" type="image/svg+xml" href="../Assets/9tails-logo.svg">
+    <link rel="stylesheet" href="Operations.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js" defer></script>
+    <script src="maps.js" defer></script>
+    <script src="api.js" defer></script>
+    <script src="Operations.js" defer></script>
+</head>
+<body>
+    <main>
+        <section class="login-shell" id="operationsLogin">
+            <a class="brand" href="Home.html"><span>9</span>Tails</a>
+            <p class="eyebrow">Store operations</p>
+            <h1>Operations Studio</h1>
+            <p class="muted">Sign in to manage your business or create a business owner account.</p>
+            <div class="auth-switch" role="tablist" aria-label="Operations account access">
+                <button class="auth-switch-button active" id="showOperationsSignIn" type="button" role="tab" aria-selected="true" aria-controls="operationsLoginForm">Sign in</button>
+                <button class="auth-switch-button" id="showOwnerRegistration" type="button" role="tab" aria-selected="false" aria-controls="ownerRegistrationForm">Create business account</button>
+            </div>
+            <form id="operationsLoginForm" class="stack-form">
+                <label for="loginEmail">Email</label>
+                <input id="loginEmail" type="email" autocomplete="username" required>
+                <label for="loginPassword">Password</label>
+                <input id="loginPassword" type="password" autocomplete="current-password" required>
+                <button class="button button-primary" type="submit">Sign in</button>
+                <p class="feedback" id="loginFeedback" role="alert"></p>
+            </form>
+            <form id="ownerRegistrationForm" class="stack-form hidden">
+                <label for="ownerFullName">Your name</label>
+                <input id="ownerFullName" type="text" autocomplete="name" maxlength="255" required>
+                <label for="ownerEmail">Business email</label>
+                <input id="ownerEmail" type="email" autocomplete="email" maxlength="320" required>
+                <label for="ownerPassword">Password</label>
+                <input id="ownerPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                <p class="muted form-hint">Use at least 12 characters. New registrations create a product-owner account.</p>
+                <label for="ownerPasswordConfirm">Confirm password</label>
+                <input id="ownerPasswordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                <button class="button button-primary" type="submit">Create business account</button>
+                <p class="feedback" id="ownerRegistrationFeedback" role="alert"></p>
+            </form>
+            <p class="muted access-note">Delivery and warehouse access is granted by an administrator. Administrator accounts use this same sign-in form.</p>
+        </section>
+
+        <div class="app-shell hidden" id="operationsApp">
+            <aside class="sidebar">
+                <a class="brand" href="Home.html"><span>9</span>Tails</a>
+                <p class="sidebar-caption">OPERATIONS</p>
+                <nav aria-label="Operations">
+                    <a href="#overview" class="nav-link active">Overview</a>
+                    <a href="#products" class="nav-link owner-only hidden">Products</a>
+                    <a href="#locations" class="nav-link owner-only hidden">Pickup locations</a>
+                    <a href="#owner-orders" class="nav-link owner-only hidden">Owner orders</a>
+                    <a href="#delivery-tasks" class="nav-link delivery-only hidden">Delivery tasks</a>
+                    <a href="#scanner" class="nav-link delivery-only hidden">QR scanner</a>
+                    <a href="#admin-access" class="nav-link admin-only hidden">Staff & product owners</a>
+                    <a href="#notifications" class="nav-link">Notifications</a>
+                </nav>
+                <div class="sidebar-user">
+                    <span class="avatar" id="userAvatar">9</span>
+                    <div><strong id="userName">Operations user</strong><small id="userRole"></small></div>
+                    <button class="icon-button" id="operationsLogout" type="button" aria-label="Sign out">↗</button>
+                </div>
+            </aside>
+
+            <section class="workspace" id="overview">
+                <div id="operationsOverviewContent">
+                    <header class="topbar">
+                        <div class="overview-heading">
+                            <p class="eyebrow">9Tails · Store operations</p>
+                            <h1 id="welcomeTitle">Operations overview</h1>
+                            <p class="muted">Order, inventory, and delivery activity in one place.</p>
+                        </div>
+                        <div class="topbar-actions">
+                            <div class="operations-notifications">
+                                <button class="button button-light notification-toggle" id="toggleNotifications"
+                                        type="button" aria-label="Notifications" aria-expanded="false"
+                                        aria-controls="notifications">
+                                    <svg class="notification-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false">
+                                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                                        <path d="M10 21h4" />
+                                    </svg>
+                                    <span class="count-badge hidden" id="navUnreadCount">0</span>
+                                </button>
+                                <section class="panel notifications-popover hidden" id="notifications"
+                                         aria-label="Notifications" aria-hidden="true">
+                                    <div class="section-heading">
+                                        <div><p class="eyebrow">Inbox</p><h2>Notifications</h2></div>
+                                        <button class="text-button" id="markAllRead" type="button">Mark all as read</button>
+                                    </div>
+                                    <div class="notification-list" id="notificationList"></div>
+                                </section>
+                            </div>
+                        </div>
+                    </header>
+                    <p class="alert hidden" id="appFeedback" role="status" aria-live="polite">
+                        <span class="feedback-icon" aria-hidden="true"></span>
+                        <span class="feedback-message"></span>
+                    </p>
+                    <div class="metrics-row">
+                        <article class="metric">
+                            <span>Assigned orders</span>
+                            <strong id="taskCount">0</strong>
+                            <small>Orders currently assigned to you.</small>
+                        </article>
+                        <article class="metric">
+                            <span>Awaiting action</span>
+                            <strong id="actionCount">0</strong>
+                            <small>Orders that still need your next step.</small>
+                        </article>
+                        <article class="metric">
+                            <span>Unread notifications</span>
+                            <strong id="unreadCount">0</strong>
+                            <small>Updates you have not marked as read.</small>
+                        </article>
+                    </div>
+                </div>
+
+                <section class="panel admin-only hidden" id="admin-access">
+                    <div class="section-heading">
+                        <div><p class="eyebrow">Access and catalog setup</p><h2>Staff & product owners</h2></div>
+                        <span class="muted">Only administrators can change roles or assign catalog ownership.</span>
+                    </div>
+                    <form id="roleForm" class="form-grid">
+                        <label>Account<select id="staffUser" required></select></label>
+                        <label>Assign role<select id="staffRole" required>
+                            <option value="USER">Customer</option><option value="OWNER">Product owner</option>
+                            <option value="DELIVERY_AGENT">Delivery agent</option><option value="WAREHOUSE_OPERATOR">Warehouse operator</option>
+                        </select></label>
+                        <div class="wide"><button class="button button-primary" type="submit">Update account role</button></div>
+                    </form>
+                    <h3>Assign existing products to an owner</h3>
+                    <p class="muted">The owner must first add and confirm a pickup address. Existing platform products have no assumed pickup location.</p>
+                    <div class="card-list" id="adminProductAssignments"></div>
+                </section>
+
+                <section class="panel owner-only hidden" id="products">
+                    <div class="section-heading">
+                        <div><p class="eyebrow">Catalog</p><h2>Add a product</h2></div>
+                        <span class="muted">New listings start with no ratings or reviews.</span>
+                    </div>
+                    <form id="productForm" class="form-grid">
+                        <label>Product name<input name="name" maxlength="255" required></label>
+                        <div class="category-field">
+                            <label for="productCategory">Category</label>
+                            <select name="categoryId" id="productCategory" required disabled>
+                                <option value="">Loading categories...</option>
+                            </select>
+                            <p class="field-hint" id="categoryStatus" role="status">Loading available categories.</p>
+                            <button class="text-button hidden" id="retryCategories" type="button">Retry loading categories</button>
+                        </div>
+                        <label>Short description<input name="shortDescription" maxlength="500"></label>
+                        <label>Price (INR)<input name="price" type="number" min="0.01" step="0.01" required></label>
+                        <label>Stock quantity<input name="stock" type="number" min="0" step="1" required></label>
+                        <label>Condition<input name="productCondition" maxlength="100" placeholder="New"></label>
+                        <label class="wide">Full description<textarea name="description" rows="3" maxlength="10000"></textarea></label>
+                        <label class="wide">Specifications<textarea name="specifications" rows="3" maxlength="10000"></textarea></label>
+                        <label class="wide">Return / exchange policy<textarea name="returnPolicy" rows="2" maxlength="1000"></textarea></label>
+                        <label>Pickup location<select name="businessLocationId" id="productLocation" required></select></label>
+                        <div class="wide image-upload-field">
+                            <label for="productImages">Product images (up to 8, 5 MB each)</label>
+                            <div class="image-upload-controls">
+                                <input id="productImages" type="file" accept="image/jpeg,image/png,image/webp" multiple required>
+                                <div class="form-actions">
+                                    <button class="button button-primary" id="productSubmit" type="submit">Publish product</button>
+                                    <button class="button button-light hidden" id="cancelProductEdit" type="button">Cancel edit</button>
+                                </div>
+                            </div>
+                            <p class="muted image-preview-hint" id="imagePreviewHint" aria-live="polite">Selected images will appear here before you publish.</p>
+                            <div class="image-preview-grid" id="imagePreviewGrid" aria-label="Product image previews"></div>
+                        </div>
+                    </form>
+                    <div class="product-list" id="ownerProducts"></div>
+                </section>
+
+                <section class="panel owner-only hidden" id="locations">
+                    <div class="section-heading">
+                        <div><p class="eyebrow">Fulfillment setup</p><h2>Business pickup locations</h2></div>
+                    </div>
+                    <form id="locationForm" class="form-grid">
+                        <label>Location name<input name="name" required maxlength="100"></label>
+                        <label>Contact mobile<input name="contactPhone" inputmode="numeric" pattern="[6-9][0-9]{9}" required></label>
+                        <label class="wide">Street address<input name="street" required maxlength="255"></label>
+                        <label>City<input name="city" required maxlength="100"></label>
+                        <label>State<input name="state" required maxlength="100"></label>
+                        <label>Indian PIN code<input name="postalCode" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" required></label>
+                        <div class="wide pickup-map-picker">
+                            <label for="pickupLocationSearch">Find pickup location</label>
+                            <div class="pickup-map-search">
+                                <input id="pickupLocationSearch" type="search" autocomplete="street-address"
+                                       placeholder="Search street, area, city, or PIN code">
+                                <button class="button button-dark" id="pickupLocationSearchButton" type="button">Search</button>
+                            </div>
+                            <div id="pickupLocationSearchResults" class="pickup-map-results" aria-live="polite"></div>
+                            <p id="pickupLocationMapStatus" class="field-hint" role="status">
+                                Search for an address and choose a result to center the Google map and set its coordinates.
+                            </p>
+                            <div id="pickupLocationMap" class="google-map-panel">
+                                <iframe id="pickupLocationMapView" class="pickup-map-view"
+                                        title="Google Maps pickup location preview"
+                                        src="https://www.google.com/maps?output=embed&amp;q=12.9716%2C77.5946&amp;z=12"
+                                        loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                                        allowfullscreen></iframe>
+                                <a id="pickupLocationMapLink" class="button button-light hidden" target="_blank"
+                                   rel="noopener noreferrer">Open selected location in Google Maps</a>
+                            </div>
+                            <p class="pickup-map-hint">Choose a search result to preview its location and save its exact coordinates. Open it in Google Maps for full map controls.</p>
+                        </div>
+                        <label>Latitude<input name="latitude" id="pickupLatitude" type="number" min="-90" max="90" step="any" readonly required></label>
+                        <label>Longitude<input name="longitude" id="pickupLongitude" type="number" min="-180" max="180" step="any" readonly required></label>
+                        <label class="check-label"><input name="verifiedByOwner" type="checkbox" required> I confirm this is the exact pickup address.</label>
+                        <div class="wide"><button class="button button-primary" type="submit">Save pickup location</button></div>
+                    </form>
+                    <div class="location-list" id="locationList"></div>
+                </section>
+
+                <section class="panel owner-only hidden" id="owner-orders">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">Seller queue</p>
+                            <h2>Orders awaiting your action</h2>
+                            <p class="section-description">Review new orders and confirm or reject them to start fulfillment.</p>
+                        </div>
+                    </div>
+                    <div class="card-list" id="ownerFulfillments"></div>
+                </section>
+
+                <section class="panel warehouse-only hidden" id="warehouse-agent-approvals">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">Warehouse team</p>
+                            <h2>Delivery agents</h2>
+                            <p class="section-description">Approve agents who registered for your warehouse and deactivate accounts that should no longer receive assignments.</p>
+                        </div>
+                    </div>
+                    <div class="card-list" id="warehouseDeliveryAgents"></div>
+                </section>
+
+                <section class="panel hidden" id="warehouseApprovalPending" role="status">
+                    <p class="eyebrow">Administrator approval</p>
+                    <h2>Warehouse awaiting approval</h2>
+                    <p class="section-description">Your warehouse location must be approved by an administrator before you can process packages or approve delivery agents.</p>
+                </section>
+
+                <section class="panel delivery-only hidden" id="delivery-tasks">
+                    <div class="section-heading"><div><p class="eyebrow">Assigned workflow</p><h2>Delivery tasks</h2></div></div>
+                    <div class="card-list" id="deliveryTasks"></div>
+                </section>
+
+                <section class="panel delivery-only hidden" id="scanner">
+                    <div class="section-heading">
+                        <div><p class="eyebrow">Mobile-first workflow</p><h2>QR scanner</h2></div>
+                        <span class="muted">Camera access requires HTTPS or localhost.</span>
+                    </div>
+                    <div class="scanner-controls">
+                        <button class="button button-primary" id="startScanner" type="button">Open scanner</button>
+                        <button class="button button-light" id="stopScanner" type="button" disabled>Stop scanner</button>
+                        <button class="button button-light" id="retryScanner" type="button" hidden>Retry</button>
+                    </div>
+                    <p class="muted" id="scannerMessage">Scan the package QR at each checkpoint. The order status determines which single stage can be submitted.</p>
+                    <video id="scannerVideo" class="scanner-video hidden" playsinline muted></video>
+                    <form id="manualScanForm" class="manual-scan">
+                        <label for="manualQrToken">Manual token entry</label>
+                        <div><input id="manualQrToken" autocomplete="off" maxlength="128" required><button class="button button-dark" type="submit">Validate token</button></div>
+                    </form>
+                    <div id="scanResult" class="scan-result hidden"></div>
+                    <form class="stage-form hidden" id="stageForm">
+                        <div id="stageFields"></div>
+                        <button class="button button-primary" id="stageSubmit" type="submit">Confirm stage</button>
+                    </form>
+                </section>
+
+                <footer class="footer">9Tails Operations · Changes are validated and recorded by the server.</footer>
+            </section>
+        </div>
+    </main>
+</body>
+</html>

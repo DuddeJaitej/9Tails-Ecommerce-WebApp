@@ -58,7 +58,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "http://192.168.1.*:*"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setExposedHeaders(List.of("Authorization"));
@@ -81,16 +84,18 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/uploads/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
                 // Admin-only write operations
-                .requestMatchers(HttpMethod.POST,   "/products/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/products/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/products/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST,   "/products/**").hasAnyRole("ADMIN", "OWNER")
+                .requestMatchers(HttpMethod.PUT,    "/products/**").hasAnyRole("ADMIN", "OWNER")
+                .requestMatchers(HttpMethod.DELETE, "/products/**").hasAnyRole("ADMIN", "OWNER")
                 .requestMatchers(HttpMethod.POST,   "/categories/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/categories/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/categories/**").hasRole("ADMIN")
-                .requestMatchers("/users/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/users/**").hasAnyRole(
+                        "USER", "OWNER", "DELIVERY_AGENT", "WAREHOUSE_OPERATOR", "ADMIN")
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )

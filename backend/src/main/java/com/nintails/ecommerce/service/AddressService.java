@@ -4,6 +4,7 @@ import com.nintails.ecommerce.dto.AddressDto;
 import com.nintails.ecommerce.entity.Address;
 import com.nintails.ecommerce.entity.User;
 import com.nintails.ecommerce.exception.ResourceNotFoundException;
+import com.nintails.ecommerce.exception.BadRequestException;
 import com.nintails.ecommerce.repository.AddressRepository;
 import com.nintails.ecommerce.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class AddressService {
     @Transactional
     public AddressDto addAddress(String email, AddressDto dto) {
         User user = getUser(email);
+        validateCoordinates(dto);
 
         // If this is first address or set as default, clear others
         if (Boolean.TRUE.equals(dto.getIsDefault())) {
@@ -44,6 +46,8 @@ public class AddressService {
                 .city(dto.getCity())
                 .postalCode(dto.getPostalCode())
                 .country(dto.getCountry())
+                .latitude(dto.getLatitude())
+                .longitude(dto.getLongitude())
                 .isDefault(isFirst || Boolean.TRUE.equals(dto.getIsDefault()))
                 .build();
 
@@ -53,6 +57,7 @@ public class AddressService {
     @Transactional
     public AddressDto updateAddress(String email, Long addressId, AddressDto dto) {
         User user = getUser(email);
+        validateCoordinates(dto);
         Address address = addressRepository.findByIdAndUserId(addressId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Address", addressId));
 
@@ -66,6 +71,8 @@ public class AddressService {
         address.setCity(dto.getCity());
         address.setPostalCode(dto.getPostalCode());
         address.setCountry(dto.getCountry());
+        address.setLatitude(dto.getLatitude());
+        address.setLongitude(dto.getLongitude());
         if (dto.getIsDefault() != null) address.setIsDefault(dto.getIsDefault());
 
         return toDto(addressRepository.save(address));
@@ -84,7 +91,20 @@ public class AddressService {
                 .id(a.getId()).fullName(a.getFullName())
                 .street(a.getStreet()).city(a.getCity())
                 .postalCode(a.getPostalCode()).country(a.getCountry())
+                .latitude(a.getLatitude()).longitude(a.getLongitude())
                 .isDefault(a.getIsDefault()).build();
+    }
+
+    private void validateCoordinates(AddressDto dto) {
+        Double latitude = dto.getLatitude();
+        Double longitude = dto.getLongitude();
+        if ((latitude == null) != (longitude == null)) {
+            throw new BadRequestException("Both delivery coordinates must be provided together.");
+        }
+        if (latitude != null && (latitude < -90 || latitude > 90
+                || longitude < -180 || longitude > 180)) {
+            throw new BadRequestException("Delivery coordinates are outside valid map ranges.");
+        }
     }
 
     private User getUser(String email) {

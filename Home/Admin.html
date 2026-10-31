@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#eafdf8">
+    <link rel="icon" type="image/svg+xml" href="../Assets/9tails-logo.svg">
+    <link rel="stylesheet" href="Admin.css">
+    <title>Admin Dashboard | 9Tails</title>
+    <script>window.TAP_API_TOKEN_KEY = 'tap_admin_jwt';</script>
+    <script defer src="maps.js"></script>
+    <script defer src="api.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script defer src="Admin.js"></script>
+</head>
+<body>
+    <main class="admin-page">
+        <section class="admin-login-card" id="adminLogin">
+            <a class="brand-mark" href="Home.html"><span>9</span> Tails</a>
+            <span class="eyebrow">Store operations</span>
+            <h1>Admin access</h1>
+            <p>Sign in with an administrator account to view store analytics and transactions.</p>
+            <form id="adminLoginForm">
+                <label for="adminEmail">Email</label>
+                <input id="adminEmail" type="email" autocomplete="username" required>
+                <label for="adminPassword">Password</label>
+                <input id="adminPassword" type="password" autocomplete="current-password" required>
+                <button class="primary-button" id="adminLoginButton" type="submit">Continue to dashboard</button>
+            </form>
+            <button class="text-button login-helper" id="showForgotPassword" type="button">Forgot password?</button>
+            <section class="admin-bootstrap-panel hidden" id="adminBootstrapPanel" aria-labelledby="adminBootstrapHeading">
+                <h2 id="adminBootstrapHeading">First-time administrator registration</h2>
+                <p id="adminBootstrapMessage" class="form-intro" role="status">Checking whether initial registration is available…</p>
+                <form id="adminBootstrapForm" class="hidden">
+                    <label for="bootstrapAdminEmail">Administrator email</label>
+                    <input id="bootstrapAdminEmail" type="email" autocomplete="email" maxlength="254" required>
+                    <label for="bootstrapAdminPassword">Password (at least 12 characters)</label>
+                    <input id="bootstrapAdminPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                    <label for="confirmBootstrapAdminPassword">Confirm password</label>
+                    <input id="confirmBootstrapAdminPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                    <button class="primary-button" id="bootstrapAdminButton" type="submit">Register first administrator</button>
+                </form>
+                <p class="feedback-message" id="adminBootstrapFeedback" role="alert"></p>
+            </section>
+            <form id="adminForgotForm" class="hidden">
+                <p class="form-intro">We’ll email a one-time reset link if this address belongs to an administrator.</p>
+                <label for="forgotAdminEmail">Administrator email</label>
+                <input id="forgotAdminEmail" type="email" autocomplete="email" required>
+                <button class="primary-button" id="forgotPasswordButton" type="submit">Send reset link</button>
+                <button class="text-button" id="backToAdminLogin" type="button">Back to sign in</button>
+            </form>
+            <form id="adminResetForm" class="hidden">
+                <p class="form-intro">Choose a new password. Reset links expire after 30 minutes and can only be used once.</p>
+                <input id="adminResetToken" type="hidden">
+                <label for="newAdminPassword">New password</label>
+                <input id="newAdminPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                <label for="confirmAdminPassword">Confirm new password</label>
+                <input id="confirmAdminPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                <button class="primary-button" id="resetPasswordButton" type="submit">Reset password</button>
+            </form>
+            <p class="feedback-message" id="loginFeedback" role="alert"></p>
+            <a class="back-link" href="Home.html">← Back to storefront</a>
+        </section>
+
+        <div class="dashboard-shell hidden" id="dashboardShell">
+            <aside class="sidebar">
+                <a class="brand-mark" href="Home.html"><span>9</span> Tails</a>
+                <p class="sidebar-caption">COMMERCE STUDIO</p>
+                <nav aria-label="Dashboard sections">
+                    <a class="sidebar-link active" href="#overview"><span>◫</span> Overview</a>
+                    <a class="sidebar-link" href="#transactions"><span>▤</span> Transactions</a>
+                    <a class="sidebar-link" href="#inventory"><span>◇</span> Inventory</a>
+                    <a class="sidebar-link" href="#customers"><span>♙</span> Customers</a>
+                    <a class="sidebar-link" href="#staff"><span>♧</span> Owners & staff</a>
+                </nav>
+                <div class="sidebar-bottom">
+                    <span class="admin-avatar" id="adminAvatar">A</span>
+                    <div class="admin-identity">
+                        <strong id="adminName">Administrator</strong>
+                        <span id="adminEmailLabel"></span>
+                    </div>
+                    <button class="icon-button" id="adminLogout" type="button" aria-label="Sign out">↗</button>
+                </div>
+            </aside>
+
+            <section class="dashboard-main">
+                <div class="dashboard-alert hidden" id="dashboardAlert" role="alert"></div>
+                <div id="overview">
+                    <header class="dashboard-header">
+                        <div>
+                            <span class="eyebrow">9Tails · Store intelligence</span>
+                            <h1>Overview</h1>
+                            <p>Here’s what’s happening with your store.</p>
+                        </div>
+                        <div class="header-actions">
+                            <span class="live-indicator"><i></i> Live store data</span>
+                        </div>
+                    </header>
+
+                    <section class="metric-grid" aria-label="Store metrics">
+                        <article class="metric-card">
+                            <div class="metric-heading"><span>Paid revenue</span><span class="metric-icon rose">₹</span></div>
+                            <strong id="paidRevenue">—</strong>
+                            <small>Verified payments to date</small>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-heading"><span>Total orders</span><span class="metric-icon violet">▤</span></div>
+                            <strong id="totalOrders">—</strong>
+                            <small>All order statuses</small>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-heading"><span>Needs attention</span><span class="metric-icon amber">◷</span></div>
+                            <strong id="pendingOrders">—</strong>
+                            <small>Orders awaiting processing</small>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-heading"><span>Customers</span><span class="metric-icon mint">♙</span></div>
+                            <strong id="totalCustomers">—</strong>
+                            <small>Registered customer accounts</small>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-heading"><span>Active products</span><span class="metric-icon blue">◇</span></div>
+                            <strong id="activeProducts">—</strong>
+                            <small>Available in the catalog</small>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-heading"><span>Low stock</span><span class="metric-icon amber">!</span></div>
+                            <strong id="lowStockProducts">—</strong>
+                            <small>Five units or fewer</small>
+                        </article>
+                    </section>
+
+                    <section class="analytics-grid">
+                        <article class="panel sales-panel">
+                            <div class="panel-heading">
+                                <div><span class="eyebrow">Last seven days</span><h2>Sales performance</h2></div>
+                                <span class="chart-key"><i class="key-sales"></i> Paid revenue <i class="key-orders"></i> Orders</span>
+                            </div>
+                            <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart" aria-label="Sales and orders over the past seven days"></canvas></div>
+                        </article>
+                        <article class="panel chart-panel">
+                            <div class="panel-heading"><div><span class="eyebrow">Fulfillment</span><h2>Order status</h2></div></div>
+                            <div class="chart-wrap doughnut-wrap"><canvas id="statusChart" aria-label="Orders by fulfillment status"></canvas></div>
+                            <div class="chart-legend" id="statusLegend"></div>
+                        </article>
+                        <article class="panel chart-panel">
+                            <div class="panel-heading"><div><span class="eyebrow">Checkout</span><h2>Payment methods</h2></div></div>
+                            <div class="chart-wrap doughnut-wrap"><canvas id="paymentChart" aria-label="Orders by payment method"></canvas></div>
+                            <div class="chart-legend" id="paymentLegend"></div>
+                        </article>
+                    </section>
+                </div>
+
+                <section class="panel table-panel compact-admin-section" id="transactions">
+                    <div class="panel-heading table-heading">
+                        <div><span class="eyebrow">Latest activity</span><h2>Transactions</h2></div>
+                        <label class="table-search">
+                            <span class="sr-only">Search transactions</span>
+                            <input id="orderSearch" type="search" placeholder="Search order or customer">
+                        </label>
+                    </div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Payment</th><th>Total</th><th>Status</th></tr></thead>
+                            <tbody id="ordersTable"><tr><td class="table-empty" colspan="6">Loading transactions…</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div class="table-pagination">
+                        <p id="ordersPageSummary">Loading orders…</p>
+                        <div><button id="ordersPrevious" type="button" disabled>Previous</button><span id="ordersPageLabel">Page 1</span><button id="ordersNext" type="button" disabled>Next</button></div>
+                    </div>
+                    <div class="delivery-audit">
+                        <div class="panel-heading table-heading">
+                            <div><span class="eyebrow">Audited fulfillment activity</span><h2>Owner & warehouse decisions</h2></div>
+                        </div>
+                        <div class="table-scroll">
+                            <table>
+                                <thead><tr><th>Order</th><th>Action</th><th>Recorded by</th><th>Time</th><th>Details</th></tr></thead>
+                                <tbody id="deliveryAuditEvents"><tr><td class="table-empty" colspan="5">Loading audited activity…</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lower-grid">
+                    <article class="panel table-panel" id="inventory">
+                        <div class="panel-heading table-heading">
+                            <div><span class="eyebrow">Stock health</span><h2>Inventory watch</h2></div>
+                            <span class="subtle-count" id="inventoryCount"></span>
+                        </div>
+                        <div class="table-scroll">
+                            <table>
+                                <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>In stock</th></tr></thead>
+                                <tbody id="inventoryTable"><tr><td class="table-empty" colspan="4">Loading inventory…</td></tr></tbody>
+                            </table>
+                        </div>
+                        <div class="table-pagination">
+                            <p id="inventoryPageSummary">Loading products…</p>
+                            <div><button id="inventoryPrevious" type="button" disabled>Previous</button><span id="inventoryPageLabel">Page 1</span><button id="inventoryNext" type="button" disabled>Next</button></div>
+                        </div>
+                    </article>
+                    <article class="panel table-panel" id="customers">
+                        <div class="panel-heading table-heading">
+                            <div><span class="eyebrow">Growing community</span><h2>New customers</h2></div>
+                        </div>
+                        <div class="customer-list" id="customersList"><p class="table-empty">Loading customers…</p></div>
+                        <div class="table-pagination">
+                            <p id="customersPageSummary">Loading customers…</p>
+                            <div><button id="customersPrevious" type="button" disabled>Previous</button><span id="customersPageLabel">Page 1</span><button id="customersNext" type="button" disabled>Next</button></div>
+                        </div>
+                    </article>
+                    <article class="panel table-panel" id="staff">
+                        <div class="panel-heading table-heading">
+                            <div><span class="eyebrow">Account directory</span><h2>Owners & delivery staff</h2></div>
+                            <div class="staff-panel-actions">
+                                <a class="secondary-button staff-workspace-link" href="AdminRegister.html">Register administrator</a>
+                                <a class="secondary-button staff-workspace-link" href="Delivery.html">Delivery workspace</a>
+                            </div>
+                        </div>
+                        <p class="staff-description">Warehouse operators register a location and request approval. Review each hub’s map location below before activating it. Delivery agents register under an approved warehouse and are approved by its operator.</p>
+                        <div class="warehouse-approval-list" id="warehouseList" aria-live="polite">
+                            <p class="table-empty">Loading warehouse registrations…</p>
+                        </div>
+                        <div class="admin-warehouse-map" id="adminWarehouseMap" role="region" aria-label="Google Maps links for registered warehouses"></div>
+                        <div class="staff-list" id="staffList" aria-live="polite">
+                            <p class="table-empty">Loading admin and delivery accounts…</p>
+                        </div>
+                    </article>
+                </section>
+                <footer class="dashboard-footer">9Tails Store Intelligence <span>·</span> Metrics reflect records currently saved in the store.</footer>
+            </section>
+        </div>
+    </main>
+</body>
+</html>

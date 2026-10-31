@@ -1,7 +1,7 @@
 /* ================================================================
    ProductDetail.css
    Styles for: Product Detail page + new Home page sections
-   (categories showcase, deals, testimonials, trust strip, ratings)
+   (categories showcase, deals, top-rated products, trust strip, ratings)
    ================================================================ */
 
 /* ── Breadcrumb ───────────────────────────────────────────────── */
@@ -85,7 +85,7 @@
 .pd-thumb img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
 }
 
@@ -102,12 +102,13 @@
 .pd-main-image {
     width: 100%;
     aspect-ratio: 1 / 1;
-    object-fit: cover;
+    object-fit: contain;
+    background: #fff;
     display: block;
     transition: transform 0.4s ease;
 }
 
-.pd-main-image-wrap:hover .pd-main-image { transform: scale(1.04); }
+.pd-main-image-wrap:hover .pd-main-image { transform: scale(1.02); }
 
 .pd-zoom-hint {
     position: absolute;
@@ -189,6 +190,21 @@
     letter-spacing: -0.02em;
 }
 
+.pd-original-price {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+}
+
+.pd-discount-badge {
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: #fff0f4;
+    color: #b4235a;
+    font-size: .8rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+
 .pd-delivery-badge {
     display: inline-flex;
     align-items: center;
@@ -206,6 +222,64 @@
     line-height: 1.8;
     color: var(--text-secondary);
     max-width: 520px;
+}
+
+.pd-specifications {
+    display: grid;
+    gap: 10px;
+    padding: 18px 20px;
+    border: 1px solid rgba(124, 97, 108, 0.14);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.pd-specifications-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+}
+
+.pd-specifications-heading h2 {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.pd-specifications-heading span {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.pd-specifications > p {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    white-space: pre-line;
+}
+
+.pd-return-policy {
+    display: grid;
+    gap: 6px;
+    padding: 14px 18px;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 14px 14px 0;
+    background: rgba(255, 255, 255, 0.62);
+}
+
+.pd-return-policy h2 {
+    color: var(--text-primary);
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.pd-return-policy p {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.6;
+    white-space: pre-line;
 }
 
 .pd-stock-row { display: flex; align-items: center; gap: 10px; }
@@ -298,23 +372,42 @@
 }
 
 .pd-wishlist-btn {
-    padding: 13px 22px;
-    border-radius: 999px;
-    border: 1.5px solid var(--thistle);
-    background: rgba(255, 255, 255, 0.9);
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 2;
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1.5px solid rgba(124, 97, 108, 0.18);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.96);
     color: var(--accent-dark);
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1.45rem;
+    line-height: 1;
     cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
+    box-shadow: 0 8px 22px rgba(92, 74, 86, 0.16);
+    transition: transform 0.2s, color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 .pd-wishlist-btn:hover, .pd-wishlist-btn.active {
     background: var(--accent);
     color: #fff;
     border-color: var(--accent);
-    box-shadow: 0 10px 24px rgba(255, 118, 164, 0.24);
+    box-shadow: 0 10px 24px rgba(255, 118, 164, 0.3);
+    transform: translateY(-2px);
+}
+
+.pd-wishlist-btn:focus-visible {
+    outline: 3px solid var(--accent-dark);
+    outline-offset: 3px;
+}
+
+.pd-wishlist-btn:disabled {
+    cursor: wait;
+    opacity: 0.75;
 }
 
 .pd-wishlist-btn.is-just-added {
@@ -631,87 +724,213 @@
     box-shadow: 0 10px 24px rgba(255, 118, 164, 0.3);
 }
 
-/* ── Testimonials ─────────────────────────────────────────────── */
-.testimonials-section {
+/* ── Top rated products ───────────────────────────────────────── */
+.top-rated-section {
     padding: 0 10% 70px;
+    scroll-margin-top: 130px;
 }
 
-.testimonials-inner {
+.top-rated-inner {
     max-width: 1400px;
     margin: 0 auto;
 }
 
-.testimonials-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 20px;
-}
-
-.testimonial-card {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 24px;
-    padding: 28px;
-    margin: 0;
-    box-shadow: 0 20px 48px rgba(92, 74, 86, 0.08);
+.top-rated-toolbar {
     display: flex;
-    flex-direction: column;
+    min-height: 40px;
+    justify-content: space-between;
+    align-items: center;
     gap: 16px;
-    transition: transform 0.25s, box-shadow 0.25s;
+    margin: -20px 0 10px;
 }
 
-.testimonial-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 28px 60px rgba(92, 74, 86, 0.14);
-}
-
-.testimonial-stars {
-    font-size: 1.05rem;
-    color: #f59e0b;
-    letter-spacing: 2px;
-}
-
-.testimonial-card p {
-    font-size: 0.93rem;
-    line-height: 1.75;
+.top-rated-message {
+    margin: 0;
     color: var(--text-secondary);
-    flex: 1;
-    font-style: italic;
+    font-size: 0.9rem;
 }
 
-.testimonial-card footer {
+.top-rated-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.top-rated-arrow {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border: 1px solid rgba(124, 97, 108, 0.18);
+    border-radius: 50%;
+    background: #fff;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.top-rated-arrow:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.top-rated-arrow:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.top-rated-track {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    padding: 8px 2px 14px;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.top-rated-track::-webkit-scrollbar {
+    display: none;
+}
+
+.top-rated-card {
+    display: flex;
+    flex: 0 0 calc((100% - 54px) / 4);
+    min-width: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 14px 36px rgba(92, 74, 86, 0.08);
+    color: inherit;
+    text-decoration: none;
+    scroll-snap-align: start;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.top-rated-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 42px rgba(92, 74, 86, 0.13);
+}
+
+.top-rated-card > img {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    background: #f7f2f5;
+}
+
+.customer-review-card {
+    justify-content: space-between;
+    min-height: 220px;
+    padding: 24px;
+}
+
+.customer-review-opinion {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 0.96rem;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+
+.customer-review-footer {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.customer-review-avatar {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #f7e6ed;
+}
+
+.customer-review-avatar-fallback {
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #9b75a5);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.customer-review-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.customer-review-footer .top-rated-stars {
+    margin-left: auto;
+    flex: 0 0 auto;
+}
+
+.top-rated-card-copy {
+    display: grid;
+    flex: 1;
+    gap: 8px;
+    padding: 18px;
+}
+
+.top-rated-category {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.top-rated-card h3 {
+    display: -webkit-box;
+    overflow: hidden;
+    min-height: 2.8em;
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.top-rated-stars .star-full,
+.top-rated-stars .star-half {
+    color: #e6a700;
+}
+
+.top-rated-stars .star-empty {
+    color: #d7d2d3;
+}
+
+.top-rated-score {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.top-rated-score span {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.top-rated-card-copy > strong {
+    align-self: end;
     margin-top: 4px;
 }
 
-.testimonial-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 999px;
-    background: linear-gradient(135deg, var(--accent), #ff91b3);
-    color: #fff;
-    display: grid;
-    place-items: center;
-    font-weight: 700;
-    font-size: 1rem;
-    flex-shrink: 0;
+.top-rated-section .section-header-centered {
+    margin-bottom: 30px;
 }
 
-.testimonial-card cite {
-    font-style: normal;
-    display: flex;
-    flex-direction: column;
-}
-
-.testimonial-card cite strong {
-    font-size: 0.9rem;
-    color: var(--text-primary);
-}
-
-.testimonial-card cite span {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
+.top-rated-section .section-header-centered p {
+    margin: 0 auto;
 }
 
 /* ── Trust Strip ──────────────────────────────────────────────── */
@@ -834,7 +1053,7 @@
     .deals-inner { grid-template-columns: 1fr 1fr; }
     .deals-card--highlight { grid-column: 1 / -1; min-height: 320px; }
     .pd-related-grid { grid-template-columns: repeat(3, 1fr); }
-    .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+    .top-rated-card { flex-basis: calc((100% - 36px) / 3); }
 }
 
 @media (max-width: 900px) {
@@ -856,16 +1075,16 @@
 
     .pd-related { padding: 0 6% 60px; }
     .pd-related-grid { grid-template-columns: repeat(2, 1fr); }
+    .top-rated-card { flex-basis: calc((100% - 18px) / 2); }
 
     .categories-grid { grid-template-columns: repeat(3, 1fr); }
     .deals-inner { grid-template-columns: 1fr; }
     .deals-card--highlight { grid-column: auto; }
-    .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
     .breadcrumb-nav { padding: 14px 6%; }
 }
 
 @media (max-width: 640px) {
-    .categories-section, .deals-section, .testimonials-section, .trust-section { padding-left: 5%; padding-right: 5%; }
+    .categories-section, .deals-section, .top-rated-section, .trust-section { padding-left: 5%; padding-right: 5%; }
     .categories-grid {
         display: flex;
         gap: 12px;
@@ -882,20 +1101,8 @@
     }
     .deals-card { min-height: 280px; padding: 24px; }
     .deals-card-text h3 { font-size: 1.3rem; }
-    .testimonials-grid {
-        display: flex;
-        gap: 14px;
-        overflow-x: auto;
-        padding: 8px 2px 14px;
-        scroll-snap-type: x mandatory;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-    .testimonials-grid::-webkit-scrollbar { display: none; }
-    .testimonial-card {
-        flex: 0 0 min(82vw, 340px);
-        scroll-snap-align: start;
-    }
+    .top-rated-card { flex-basis: min(78vw, 280px); }
+    .top-rated-card > img { height: 170px; }
     .pd-container { padding: 0 5% 50px; }
     .pd-related { padding: 0 5% 50px; }
     .pd-related-grid { grid-template-columns: repeat(2, 1fr); }
@@ -918,7 +1125,7 @@
 @media (max-width: 640px) {
     .categories-section,
     .deals-section,
-    .testimonials-section,
+    .top-rated-section,
     .trust-section {
         padding-left: 5%;
         padding-right: 5%;
@@ -947,14 +1154,9 @@
         margin-bottom: 16px;
     }
 
-    .testimonials-grid {
-        gap: 14px;
-    }
-
-    .testimonial-card {
-        padding: 20px;
-        border-radius: 20px;
-    }
+    .top-rated-toolbar { margin-top: -14px; }
+    .top-rated-card { flex-basis: min(78vw, 280px); }
+    .top-rated-card > img { height: 170px; }
 
     .trust-section {
         padding-top: 30px;

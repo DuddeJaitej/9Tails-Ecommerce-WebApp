@@ -28,6 +28,10 @@ public class Address {
     @NotBlank
     private String country;
 
+    private Double latitude;
+
+    private Double longitude;
+
     @Builder.Default
     private Boolean isDefault = false;
 

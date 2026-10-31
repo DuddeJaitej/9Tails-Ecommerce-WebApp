@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @Entity
 @Table(name = "order_items")
@@ -22,6 +25,10 @@ public class OrderItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fulfillment_id")
+    private SellerFulfillment fulfillment;
+
     // snapshot values at order time
     private String productName;
     private String productImageUrl;
@@ -38,4 +45,18 @@ public class OrderItem {
 
     @Column(nullable = false)
     private boolean cancelled;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean stockReserved = false;
+
+    @Min(1)
+    @Max(5)
+    @Column(name = "customer_rating")
+    private Integer customerRating;
+
+    @Column(name = "customer_review", length = 1000)
+    private String customerReview;
+
+    private LocalDateTime customerReviewedAt;
 }

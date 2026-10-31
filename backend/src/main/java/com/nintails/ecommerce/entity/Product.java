@@ -25,6 +25,18 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(length = 500)
+    private String shortDescription;
+
+    @Column(columnDefinition = "TEXT")
+    private String specifications;
+
+    @Column(length = 100)
+    private String productCondition;
+
+    @Column(length = 1000)
+    private String returnPolicy;
+
     @NotNull
     @DecimalMin("0.0")
     @Column(nullable = false, precision = 10, scale = 2)
@@ -62,6 +74,18 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private User owner;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "business_location_id")
+    private BusinessLocation businessLocation;
+
+    @Version
+    @Builder.Default
+    private Long version = 0L;
 
     @CreationTimestamp
     @Column(updatable = false)

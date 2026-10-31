@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#172124">
+    <title>Register Delivery Agent | 9Tails</title>
+    <link rel="icon" type="image/svg+xml" href="../Assets/9tails-logo.svg">
+    <link rel="stylesheet" href="Operations.css">
+    <link rel="stylesheet" href="Delivery.css">
+    <script>window.TAP_API_TOKEN_KEY = 'tap_delivery_jwt'; window.TAP_API_ROLE_SCOPED_TOKENS = true;</script>
+    <script src="api.js" defer></script>
+    <script src="DeliveryRegister.js" defer></script>
+</head>
+<body data-registration-role="DELIVERY_AGENT">
+    <main class="login-shell">
+        <a class="brand" href="DeliveryRegister.html"><span>9</span>Tails</a>
+        <p class="eyebrow">Delivery operations</p>
+        <h1>Register as a delivery agent</h1>
+        <p class="muted">Choose an approved warehouse. Its operator will review and activate your account.</p>
+        <form id="deliveryRegisterForm" class="stack-form">
+            <label for="deliveryRegisterName">Full name</label>
+            <input id="deliveryRegisterName" type="text" autocomplete="name" maxlength="100" required>
+            <label for="deliveryRegisterEmail">Work email</label>
+            <input id="deliveryRegisterEmail" type="email" autocomplete="email" maxlength="254" required>
+            <label for="deliveryRegisterPassword">Password (at least 12 characters)</label>
+            <input id="deliveryRegisterPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+            <label for="deliveryWarehouse">Warehouse to work with</label>
+            <select id="deliveryWarehouse" required>
+                <option value="">Loading approved warehouses…</option>
+            </select>
+            <small class="muted">You can receive delivery tasks after the selected warehouse operator activates your account.</small>
+            <button class="button button-primary" id="deliveryRegisterButton" type="submit">Register delivery account</button>
+            <p class="feedback" id="deliveryRegisterFeedback" role="alert"></p>
+        </form>
+        <div class="delivery-auth-switch">
+            <span>Need a different staff account?</span>
+            <a href="WarehouseRegister.html">Register as a warehouse operator</a>
+            <a href="Delivery.html">Back to staff sign in</a>
+        </div>
+    </main>
+</body>
+</html>

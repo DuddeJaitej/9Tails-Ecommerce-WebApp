@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
     full_name   VARCHAR(100)  NOT NULL,
     email       VARCHAR(150)  NOT NULL UNIQUE,
     password    VARCHAR(255)  NOT NULL,
+    profile_photo_url VARCHAR(1000),
     role        ENUM('USER','ADMIN') NOT NULL DEFAULT 'USER',
     created_at  DATETIME(6),
     updated_at  DATETIME(6)
@@ -48,6 +49,7 @@ CREATE TABLE IF NOT EXISTS products (
     review_count    INT              DEFAULT 0,
     fast_delivery   TINYINT(1)      NOT NULL DEFAULT 1,
     active          TINYINT(1)       NOT NULL DEFAULT 1,
+    version         BIGINT           NOT NULL DEFAULT 0,
     category_id     BIGINT           NOT NULL,
     created_at      DATETIME(6),
     updated_at      DATETIME(6),
@@ -73,8 +75,10 @@ CREATE TABLE IF NOT EXISTS addresses (
 CREATE TABLE IF NOT EXISTS orders (
     id                   BIGINT        NOT NULL AUTO_INCREMENT PRIMARY KEY,
     order_number         VARCHAR(50)   NOT NULL UNIQUE,
-    status               ENUM('PENDING','CONFIRMED','PACKED','SHIPPED',
-                              'OUT_FOR_DELIVERY','DELIVERED','CANCELLED')
+    status               ENUM('PENDING','CONFIRMED','PICKED_UP_FROM_OWNER',
+                              'PACKED_READY','PACKED','SHIPPED','IN_TRANSIT_TO_STORE',
+                              'AT_DESTINATION_STORE','OUT_FOR_DELIVERY',
+                              'DELIVERY_CONFIRMATION_PENDING','DELIVERED','CANCELLED')
                          NOT NULL DEFAULT 'PENDING',
     subtotal             DECIMAL(10,2) NOT NULL,
     delivery_charge      DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -107,6 +111,9 @@ CREATE TABLE IF NOT EXISTS order_items (
     unit_price        DECIMAL(10,2) NOT NULL,
     quantity          INT           NOT NULL,
     line_total        DECIMAL(10,2) NOT NULL,
+    customer_rating   TINYINT       NULL,
+    customer_review   VARCHAR(1000) NULL,
+    customer_reviewed_at DATETIME(6) NULL,
     CONSTRAINT fk_orderitem_order   FOREIGN KEY (order_id)   REFERENCES orders(id)   ON DELETE CASCADE,
     CONSTRAINT fk_orderitem_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -149,12 +156,6 @@ INSERT IGNORE INTO categories (name, description, image_url) VALUES
 ('Audio & Electronics','Headphones, speakers and gadgets',         'Assets/Products/Audio & Electronics/audio1.webp'),
 ('Gadgets',           'Smart devices and tech accessories',        'Assets/Products/Gadgets/gadgets4.webp'),
 ('Books',             'Fiction, non-fiction and educational books','Assets/Products/Books/books1.webp');
-
--- Admin user  (password = Admin@123  — BCrypt hash)
-INSERT IGNORE INTO users (full_name, email, password, role) VALUES
-('Admin', 'admin@9tails.com',
- '$2a$12$zQk1EyD7Nf5lzBkkVlWFvOhBFIHdLqzCBfnVOg7S1SYvPkMH7XoGC',
- 'ADMIN');
 
 -- Sample products – Fashion
 INSERT IGNORE INTO products (name, description, price, original_price, stock, image_url, rating, review_count, active, category_id)

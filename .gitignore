@@ -34,4 +34,5 @@ npm-debug.log*
 # ── Sensitive ─────────────────────────────────────────────
 *.env
 .env.local
+backend/.env
 secrets.properties

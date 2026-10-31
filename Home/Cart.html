@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="Home.css" />
     <link rel="stylesheet" href="ProductDetail.css" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
         window.GOOGLE_CLIENT_ID = '666048447334-1k5fvkaf20e92klpch2n3hg8c29fdqs3.apps.googleusercontent.com';
         window.GOOGLE_AUTH_ORIGIN = 'http://127.0.0.1:5500';
@@ -416,34 +417,70 @@
         .cart-list-header h3 { font-size: 1.2rem; color: var(--text-primary); }
         .cart-list-header span { color: var(--text-secondary); font-size: 0.95rem; }
         .cart-list { display: grid; gap: 14px; }
+        .empty-cart-state {
+            display: grid;
+            grid-template-columns: minmax(110px, 150px) minmax(0, 1fr);
+            align-items: center;
+            gap: 20px;
+            padding: 22px;
+            border: 1px solid rgba(124,97,108,0.1);
+            border-radius: 22px;
+            background: linear-gradient(135deg, #fff 0%, #fbf7fb 100%);
+            box-shadow: 0 12px 30px rgba(124,97,108,0.06);
+        }
+        .empty-cart-state img { display: block; width: 100%; max-width: 150px; justify-self: center; }
+        .empty-cart-copy { display: grid; justify-items: start; gap: 8px; }
+        .empty-cart-copy h4 { margin: 0; color: var(--text-primary); font-size: 1.05rem; }
+        .empty-cart-copy p { margin: 0; color: var(--text-secondary); line-height: 1.6; }
+        .empty-cart-copy a {
+            display: inline-flex; align-items: center; justify-content: center; min-height: 40px;
+            margin-top: 5px; padding: 0 17px; border-radius: 999px; background: #30252f;
+            color: #fff; font-weight: 700; text-decoration: none; transition: background 160ms ease;
+        }
+        .empty-cart-copy a:hover { background: #e85f91; }
+        @media (max-width: 520px) {
+            .empty-cart-state { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+            .empty-cart-state img { max-width: 130px; }
+            .empty-cart-copy { justify-items: center; }
+        }
 
         /* ── Address modal ── */
         .address-modal {
             position: fixed;
             inset: 0;
-            z-index: 45;
+            z-index: 1202;
             display: grid;
             place-items: center;
-            padding: 20px;
+            padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            background: rgba(25, 18, 24, 0.48);
         }
         .address-modal.hidden { display: none; }
         .address-modal-card {
-            width: min(500px,100%);
+            width: min(620px, 100%);
+            max-height: calc(100dvh - 32px);
+            margin: auto;
+            overflow-y: auto;
+            overscroll-behavior: contain;
             background: #fff;
-            border-radius: 28px;
-            padding: 30px;
+            border: 1px solid rgba(124, 97, 108, 0.12);
+            border-radius: 22px;
+            padding: clamp(20px, 4vw, 30px);
             box-shadow: 0 28px 80px rgba(92,74,86,0.22);
             position: relative;
         }
         .address-modal-card h3 { margin: 0 0 6px; color: var(--text-primary); }
         .address-modal-card > p { margin: 0 0 22px; color: var(--text-secondary); font-size: 0.92rem; }
         .address-modal-card .close-cart { position: absolute; top: 20px; right: 20px; }
-        .address-modal-card .address-form { display: grid; gap: 13px; }
+        .address-modal-card .address-form { display: grid; gap: 11px; }
         .address-modal-card .address-row {
             display: grid;
             grid-template-columns: repeat(2,minmax(0,1fr));
             gap: 12px;
         }
+        .address-modal-card .address-form > label,
+        .address-modal-card .address-row label { display: grid; gap: 6px; color: var(--text-primary); font-size: .82rem; font-weight: 700; }
         .address-modal-card .address-form input {
             border: 1.5px solid #d8c4d1;
             border-radius: 14px;
@@ -454,6 +491,17 @@
             transition: border-color 0.2s, box-shadow 0.2s;
             outline: none;
         }
+        .address-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+        .address-search-row input { min-width: 0; }
+        .address-search-row button { border: 0; border-radius: 12px; padding: 0 16px; background: #30252f; color: white; font-weight: 700; }
+        .address-search-row button:disabled { opacity: .6; cursor: wait; }
+        .address-search-results { display: grid; gap: 7px; }
+        .address-search-results:empty { display: none; }
+        .address-search-results button { width: 100%; border: 1px solid rgba(124, 97, 108, .14); border-radius: 10px; padding: 10px 12px; background: #fff; color: var(--text-primary); text-align: left; line-height: 1.45; cursor: pointer; }
+        .address-search-results button:hover, .address-search-results button:focus-visible { border-color: var(--pink-orchid); background: #fff8fb; }
+        .address-location-status { display: block; min-height: 1.4em; color: var(--text-secondary); font-size: .78rem; line-height: 1.45; }
+        #addressMap { display: grid; gap: 10px; min-width: 0; padding: 12px; border: 1px solid #d8c4d1; border-radius: 14px; background: #fff; }
+        #addressGoogleMapPreview { display: block; width: 100%; height: 280px; border: 0; border-radius: 10px; background: #f0f3f2; }
         .address-modal-card .address-form input:focus {
             border-color: var(--pink-orchid);
             box-shadow: 0 0 0 3px rgba(209,177,203,0.25);
@@ -475,6 +523,10 @@
         }
         @media (max-width: 540px) {
             .address-modal-card .address-row { grid-template-columns: 1fr; }
+            .address-modal { place-items: start center; padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)); }
+            .address-modal-card { max-height: calc(100dvh - 20px); border-radius: 17px; }
+            .address-search-row { grid-template-columns: 1fr; }
+            .address-search-row button { min-height: 44px; }
         }
     </style>
 </head>
@@ -510,11 +562,25 @@
                             <div class="profile-menu hidden" role="menu" aria-label="User menu">
                                 <div class="profile-menu-card">
                                     <p class="profile-menu-email"></p>
+                                    <a class="operations-dashboard-link hidden" href="Operations.html">Operations Dashboard</a>
                                     <button class="logout-btn" type="button">Logout</button>
                                 </div>
                             </div>
                         </li>
                     </ul>
+                </div>
+                <div class="notification-nav hidden" id="customerNotificationNav">
+                    <button class="notification-bell" id="customerNotificationBell" type="button" aria-label="Notifications" aria-expanded="false">
+                        <svg class="notification-bell-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                            <path d="M10 21h4" />
+                        </svg>
+                        <span class="notification-count hidden" id="customerNotificationCount">0</span>
+                    </button>
+                    <div class="notification-menu hidden" id="customerNotificationMenu" aria-label="Notifications">
+                        <div class="notification-menu-heading"><strong>Notifications</strong><button class="notification-mark-all" id="customerNotificationMarkAll" type="button">Mark all read</button></div>
+                        <div class="notification-menu-list" id="customerNotificationList"></div>
+                    </div>
                 </div>
             </nav>
         </div>
@@ -609,7 +675,7 @@
                                     <span class="rzp-panel-icon">⚡</span>
                                     <div>
                                         <strong>Pay via Razorpay</strong>
-                                        <p>You'll be redirected to Razorpay to complete your payment securely.</p>
+                                        <p>Continue to Razorpay Checkout to pay securely by UPI, QR code, or card.</p>
                                     </div>
                                 </div>
                                 <div class="rzp-amount-display">
@@ -617,8 +683,6 @@
                                     <span class="rzp-amount-value" id="rzpAmount">₹0.00</span>
                                 </div>
                                 <div class="rzp-panel-actions">
-                                    <!-- Razorpay redirection disabled for testing — re-enable by changing button back to:
-                                         <a href="https://razorpay.me/@duddejaitej" target="_blank" rel="noopener noreferrer"> -->
                                     <button class="rzp-pay-btn" id="rzpPayBtn" type="button">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                         Pay ₹<span id="rzpAmountBtn">0.00</span> Now
@@ -658,7 +722,6 @@
         </div>
         <div class="footer-bottom">
             <span>© 2026 9Tails. All rights reserved.</span>
-            <span>Made with ♥ in Bangalore</span>
         </div>
     </footer>
 
@@ -710,13 +773,43 @@
             <h3 id="addressModalTitle">Add delivery address</h3>
             <p>We'll deliver your order to this address.</p>
             <form class="address-form" id="addressForm">
-                <input type="text" id="fullName"   placeholder="Full name"          required />
-                <input type="text" id="street"     placeholder="Street address"     required />
-                <input type="text" id="city"       placeholder="City"               required />
+                <label for="fullName">Full name
+                    <input type="text" id="fullName" autocomplete="name" placeholder="Full name" maxlength="100" required />
+                </label>
+                <label for="addressSearch">Find your address
+                    <div class="address-search-row">
+                        <input type="search" id="addressSearch" autocomplete="street-address"
+                               placeholder="Search building, road, area, city or PIN code" maxlength="255" />
+                        <button type="button" id="addressSearchButton">Search</button>
+                    </div>
+                </label>
+                <div class="address-search-results" id="addressSearchResults" aria-live="polite"></div>
+                <label for="street">Selected street address
+                    <input type="text" id="street" autocomplete="street-address" placeholder="House/building, street, area" maxlength="255" required />
+                </label>
+                <label for="city">City
+                    <input type="text" id="city" autocomplete="address-level2" placeholder="City" maxlength="100" required />
+                </label>
                 <div class="address-row">
-                    <input type="text" id="postalCode" placeholder="Postal / ZIP code" required />
-                    <input type="text" id="country"    placeholder="Country"           required />
+                    <label for="postalCode">Postal / PIN code
+                        <input type="text" id="postalCode" autocomplete="postal-code" placeholder="Postal / PIN code" maxlength="20" required />
+                    </label>
+                    <label for="country">Country
+                        <input type="text" id="country" autocomplete="country-name" placeholder="Country" maxlength="100" required />
+                    </label>
                 </div>
+                <label for="addressMap">Verify your delivery location <span class="muted">Search for an address, select the matching result, then verify its coordinates in Google Maps.</span></label>
+                <div id="addressMap" aria-label="Google Maps preview for selected delivery address">
+                    <p class="muted" id="addressMapMessage" aria-live="polite">Search for your address and choose the matching result to set coordinates.</p>
+                    <iframe id="addressGoogleMapPreview" title="Google Maps delivery address preview"
+                            src="https://www.google.com/maps?output=embed&amp;q=20.5937%2C78.9629&amp;z=5"
+                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                            allowfullscreen></iframe>
+                    <a id="addressGoogleMapsLink" class="button button-light hidden" target="_blank"
+                       rel="noopener noreferrer">Open selected location in Google Maps</a>
+                </div>
+                <input type="hidden" id="addressLatitude" />
+                <input type="hidden" id="addressLongitude" />
                 <button type="submit" class="save-btn">Save Address</button>
             </form>
         </div>
@@ -736,6 +829,8 @@
     </script>
     <script src="api.js"></script>
     <script src="auth.js"></script>
+    <script src="notifications.js"></script>
+    <script src="maps.js"></script>
     <script>
         /* ── Toast helper ── */
         function showToast(type, title, message, duration = 4000) {
@@ -815,7 +910,7 @@
                         addressApiMap = {};
                         addresses = (apiAddresses || []).map((a, i) => {
                             addressApiMap[i] = a.id;
-                            return { id: a.id, fullName: a.fullName, street: a.street, city: a.city, postalCode: a.postalCode, country: a.country, selected: a.isDefault };
+                            return { id: a.id, fullName: a.fullName, street: a.street, city: a.city, postalCode: a.postalCode, country: a.country, latitude: a.latitude, longitude: a.longitude, selected: a.isDefault };
                         });
                         selectedAddressIndex = addresses.findIndex(a => a.selected);
                         if (selectedAddressIndex === -1 && addresses.length) selectedAddressIndex = 0;
@@ -851,6 +946,8 @@
         const addressPreviewEl = document.getElementById('addressPreview');
         const savedAddressesEl = document.getElementById('savedAddresses');
         const addressForm      = document.getElementById('addressForm');
+        let addressSearchSequence = 0;
+        let modalPreviousBodyOverflow = '';
 
         /* ── Helpers ── */
         const fmt  = v => `₹${Number(v).toFixed(2)}`;
@@ -862,6 +959,10 @@
             if (/^https?:\/\//i.test(path)) return path;
             return '/' + path.split('/').map(encodeURIComponent).join('/');
         };
+        const readCoordinate = id => {
+            const value = document.getElementById(id).value.trim();
+            return value === '' ? NaN : Number(value);
+        };
 
         function persistAddresses() {
             addresses.forEach((a,i) => a.selected = i === selectedAddressIndex);
@@ -872,7 +973,12 @@
             subtotalEl.textContent      = fmt(s);
             deliveryChargeEl.textContent= fmt(d);
             grandTotalEl.textContent    = fmt(t);
-            checkoutBtn.disabled = !items.length || selectedAddressIndex === null || selectedAddressIndex < 0 || !addresses[selectedAddressIndex];
+            const selectedAddress = addresses[selectedAddressIndex];
+            checkoutBtn.disabled = !items.length || selectedAddressIndex === null
+                || selectedAddressIndex < 0 || !selectedAddress
+                || !Number.isFinite(Number(selectedAddress.latitude))
+                || !Number.isFinite(Number(selectedAddress.longitude))
+                || selectedAddress.latitude === null || selectedAddress.longitude === null;
         }
 
         function renderAddressPreview() {
@@ -936,7 +1042,15 @@
             if (cartCountEl) cartCountEl.textContent = totalItems;
 
             if (!items.length) {
-                cartItemsEl.innerHTML = `<div class="empty-cart-message">Your shopping bag is empty. Add products from the shop.</div>`;
+                cartItemsEl.innerHTML = `
+                    <div class="empty-cart-message empty-cart-state">
+                        <img src="../Assets/EmptyStates/empty-bag.svg" alt="3D illustration of an empty shopping bag" />
+                        <div class="empty-cart-copy">
+                            <h4>Your bag is waiting for something lovely</h4>
+                            <p>Your shopping bag is empty. Explore the collection and find something you love.</p>
+                            <a href="Home.html">Explore the shop</a>
+                        </div>
+                    </div>`;
                 updateSummary(items);
                 checkoutBtn.disabled = true;
                 return;
@@ -971,6 +1085,115 @@
             });
             updateSummary(items);
         }
+
+        function setAddressCoordinates(latitude, longitude) {
+            document.getElementById('addressLatitude').value = latitude.toFixed(6);
+            document.getElementById('addressLongitude').value = longitude.toFixed(6);
+            document.getElementById('addressGoogleMapPreview').src =
+                window.TapMaps.embedUrl(latitude, longitude);
+            const mapLink = document.getElementById('addressGoogleMapsLink');
+            mapLink.href = window.TapMaps.locationUrl(latitude, longitude);
+            mapLink.classList.remove('hidden');
+        }
+
+        function applyGeocodedAddress(result) {
+            const address = result.address || {};
+            const road = address.road || address.pedestrian || address.residential
+                || address.footway || address.path || '';
+            const street = [address.house_number, road].filter(Boolean).join(' ')
+                || address.neighbourhood || address.suburb || address.quarter
+                || result.name || result.display_name || '';
+            document.getElementById('street').value = street.slice(0, 255);
+            document.getElementById('city').value =
+                (address.city || address.town || address.village || address.municipality
+                    || address.county || '').slice(0, 100);
+            document.getElementById('postalCode').value = (address.postcode || '').slice(0, 20);
+            document.getElementById('country').value = (address.country || '').slice(0, 100);
+            document.getElementById('addressSearch').value =
+                result.display_name || result.name || street;
+        }
+
+        async function searchDeliveryAddress() {
+            const query = document.getElementById('addressSearch').value.trim();
+            const button = document.getElementById('addressSearchButton');
+            const resultsContainer = document.getElementById('addressSearchResults');
+            const status = document.getElementById('addressMapMessage');
+            if (query.length < 4) {
+                status.textContent = 'Enter a fuller address, road, area, city, or PIN code to search.';
+                return;
+            }
+
+            const requestSequence = ++addressSearchSequence;
+            button.disabled = true;
+            button.textContent = 'Searching…';
+            resultsContainer.replaceChildren();
+            status.textContent = 'Searching for matching addresses…';
+            try {
+                const parameters = new URLSearchParams({
+                    format: 'jsonv2',
+                    addressdetails: '1',
+                    limit: '5',
+                    q: query
+                });
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?${parameters.toString()}`,
+                    { headers: { Accept: 'application/json' } }
+                );
+                if (!response.ok) {
+                    throw new Error(`Address search failed (HTTP ${response.status}).`);
+                }
+                const results = await response.json();
+                if (requestSequence !== addressSearchSequence) return;
+                if (!Array.isArray(results) || results.length === 0) {
+                    status.textContent = 'No matching address found. Try adding the street, area, city, or postal code.';
+                    return;
+                }
+                status.textContent = 'Choose the address that matches your delivery location:';
+                results.forEach(result => {
+                    const resultButton = document.createElement('button');
+                    resultButton.type = 'button';
+                    resultButton.textContent = result.display_name || result.name || 'Unnamed location';
+                    resultButton.addEventListener('click', () => {
+                        if (!window.TapMaps.validCoordinates(result.lat, result.lon)) {
+                            status.textContent = 'This search result did not include valid map coordinates. Choose another result.';
+                            return;
+                        }
+                        const latitude = Number(result.lat);
+                        const longitude = Number(result.lon);
+                        applyGeocodedAddress(result);
+                        setAddressCoordinates(latitude, longitude);
+                        resultsContainer.replaceChildren();
+                        status.textContent = `Selected location: ${result.display_name || 'Address selected.'}`;
+                    });
+                    resultsContainer.append(resultButton);
+                });
+            } catch (error) {
+                if (requestSequence === addressSearchSequence) {
+                    status.textContent = `Address search failed: ${error.message}`;
+                }
+            } finally {
+                if (requestSequence === addressSearchSequence) {
+                    button.disabled = false;
+                    button.textContent = 'Search';
+                }
+            }
+        }
+
+        document.getElementById('addressSearchButton').addEventListener('click', searchDeliveryAddress);
+        document.getElementById('addressSearch').addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                searchDeliveryAddress();
+            }
+        });
+        addressModal.addEventListener('click', event => {
+            if (event.target === addressModal) closeAddressForm();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !addressModal.classList.contains('hidden')) {
+                closeAddressForm();
+            }
+        });
 
         async function changeQuantity(id, action) {
             const item = cartData[id];
@@ -1007,8 +1230,11 @@
         }
 
         function openAddressModal(index = null) {
+            addressSearchSequence += 1;
             editingAddressIndex = index;
             addressForm.reset();
+            document.getElementById('addressSearchResults').replaceChildren();
+            const locationStatus = document.getElementById('addressMapMessage');
             if (editingAddressIndex !== null && addresses[editingAddressIndex]) {
                 const a = addresses[editingAddressIndex];
                 document.getElementById('fullName').value   = a.fullName;
@@ -1016,16 +1242,40 @@
                 document.getElementById('city').value       = a.city;
                 document.getElementById('postalCode').value = a.postalCode;
                 document.getElementById('country').value    = a.country;
+                document.getElementById('addressLatitude').value = a.latitude ?? '';
+                document.getElementById('addressLongitude').value = a.longitude ?? '';
+                if (window.TapMaps.validCoordinates(a.latitude, a.longitude)) {
+                    setAddressCoordinates(Number(a.latitude), Number(a.longitude));
+                } else {
+                    document.getElementById('addressGoogleMapsLink').classList.add('hidden');
+                }
+                document.getElementById('addressSearch').value =
+                    [a.street, a.city, a.postalCode, a.country].filter(Boolean).join(', ');
+                locationStatus.textContent = 'Saved coordinates loaded. Search for another address to change the selected location.';
+            } else {
+                document.getElementById('addressLatitude').value = '';
+                document.getElementById('addressLongitude').value = '';
+                document.getElementById('addressGoogleMapPreview').src =
+                    window.TapMaps.embedUrl(20.5937, 78.9629, 5);
+                document.getElementById('addressGoogleMapsLink').removeAttribute('href');
+                document.getElementById('addressGoogleMapsLink').classList.add('hidden');
+                locationStatus.textContent = 'Search for your address and choose a result to set coordinates.';
             }
+            modalPreviousBodyOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
             addressModal.classList.remove('hidden');
             pageOverlay.classList.remove('hidden');
+            document.getElementById('fullName').focus();
         }
 
         function closeAddressForm() {
+            addressSearchSequence += 1;
             editingAddressIndex = null;
             addressModal.classList.add('hidden');
             pageOverlay.classList.add('hidden');
+            document.body.style.overflow = modalPreviousBodyOverflow;
             addressForm.reset();
+            document.getElementById('addressSearchResults').replaceChildren();
         }
 
         async function deleteAddress(index) {
@@ -1064,12 +1314,24 @@
 
         addressForm.addEventListener('submit', async e => {
             e.preventDefault();
+            const latitude = readCoordinate('addressLatitude');
+            const longitude = readCoordinate('addressLongitude');
+            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+                    || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+                showToast('error', 'Delivery location required', 'Search for and select your address to set the delivery coordinates.');
+                document.getElementById('addressMapMessage').scrollIntoView({
+                    behavior: 'smooth', block: 'center'
+                });
+                return;
+            }
             const address = {
                 fullName:   document.getElementById('fullName').value.trim(),
                 street:     document.getElementById('street').value.trim(),
                 city:       document.getElementById('city').value.trim(),
                 postalCode: document.getElementById('postalCode').value.trim(),
-                country:    document.getElementById('country').value.trim()
+                country:    document.getElementById('country').value.trim(),
+                latitude,
+                longitude
             };
             const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
             if (isLoggedIn && window.tapApi) {
@@ -1110,6 +1372,8 @@
         const rzpPanel   = document.getElementById('rzpPanel');
         const rzpBackBtn = document.getElementById('rzpBackBtn');
         const rzpPayBtn  = document.getElementById('rzpPayBtn');
+        let pendingRazorpayOrder = null;
+        let pendingRazorpayPaymentResult = null;
 
         document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
             radio.addEventListener('change', () => {
@@ -1124,26 +1388,83 @@
 
         // "Back" restores checkout button view
         rzpBackBtn.addEventListener('click', () => {
+            if (pendingRazorpayPaymentResult) {
+                showToast('info', 'Payment confirmation needed', 'Retry payment confirmation before leaving checkout.');
+                return;
+            }
             rzpPanel.classList.add('hidden');
             checkoutBtn.classList.remove('hidden');
+            pendingRazorpayOrder = null;
         });
 
-        // After clicking "Pay Now" on UPI panel — save order via API then redirect (Razorpay disabled for testing)
-        rzpPayBtn.addEventListener('click', async () => {
-            const pending = JSON.parse(sessionStorage.getItem('pendingOrder') || 'null');
-            if (!pending) return;
-            const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
+        async function confirmRazorpayPayment(paymentResult) {
+            rzpPayBtn.disabled = true;
             try {
-                if (isLoggedIn && window.tapApi && pending.addressId) {
-                    await window.tapApi.orders.place(pending.addressId, 'UPI');
-                } else {
-                    throw new Error('Please sign in and select a saved address before paying.');
-                }
-                sessionStorage.removeItem('pendingOrder');
-                showToast('success', 'Order placed! 🎉', 'Redirecting to your orders…');
+                await window.tapApi.orders.verifyRazorpayPayment(paymentResult);
+                pendingRazorpayOrder = null;
+                pendingRazorpayPaymentResult = null;
+                showToast('success', 'Congratulations! 🎉', 'Payment successful. Redirecting to your orders…');
                 setTimeout(() => { window.location.href = 'Orders.html'; }, 1800);
-            } catch(err) {
-                showToast('error', 'Order failed', err.message || 'Please try again.');
+            } catch (err) {
+                rzpPayBtn.textContent = 'Retry payment confirmation';
+                showToast(
+                    'error',
+                    'Payment confirmation failed',
+                    err.message || 'Your payment may have completed. Retry confirmation before paying again.'
+                );
+            } finally {
+                rzpPayBtn.disabled = false;
+            }
+        }
+
+        rzpPayBtn.addEventListener('click', () => {
+            if (pendingRazorpayPaymentResult) {
+                confirmRazorpayPayment(pendingRazorpayPaymentResult);
+                return;
+            }
+            if (!pendingRazorpayOrder) {
+                showToast('error', 'Payment is not ready', 'Please go back and prepare your order again.');
+                return;
+            }
+            if (typeof window.Razorpay !== 'function') {
+                showToast('error', 'Razorpay is unavailable', 'Check your internet connection and reload the page.');
+                return;
+            }
+
+            const paymentOrder = pendingRazorpayOrder;
+            try {
+                const checkout = new window.Razorpay({
+                    key: paymentOrder.keyId,
+                    amount: paymentOrder.amount,
+                    currency: paymentOrder.currency,
+                    name: '9Tails',
+                    description: 'Payment for order ' + paymentOrder.receipt,
+                    order_id: paymentOrder.orderId,
+                    prefill: {
+                        name: window.tapAuth?.getSession()?.name || '',
+                        email: window.tapAuth?.getSession()?.email || ''
+                    },
+                    theme: { color: '#ff76a4' },
+                    handler: (paymentResult) => {
+                        pendingRazorpayPaymentResult = paymentResult;
+                        confirmRazorpayPayment(paymentResult);
+                    },
+                    modal: {
+                        ondismiss: () => showToast(
+                            'info',
+                            'Payment not completed',
+                            'Your order is still unpaid. You can try again.'
+                        )
+                    }
+                });
+
+                checkout.on('payment.failed', (event) => {
+                    const description = event?.error?.description || 'Please try another payment method.';
+                    showToast('error', 'Payment failed', description);
+                });
+                checkout.open();
+            } catch (err) {
+                showToast('error', 'Razorpay Checkout could not open', err.message || 'Please try again.');
             }
         });
 
@@ -1158,31 +1479,30 @@
             }
 
             const isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
-            const selectedAddress = addresses[selectedAddressIndex];
-            const orderItems = Object.values(cartData).map(i => ({ ...i }));
-            const subtotal   = sub(orderItems);
-            const delivery   = del(subtotal);
-            const total      = subtotal + delivery;
-
             if (paymentMethod === 'upi') {
-                // Show Razorpay panel with amount
-                const totalStr = total.toFixed(2);
-                document.getElementById('rzpAmount').textContent    = `₹${totalStr}`;
-                document.getElementById('rzpAmountBtn').textContent = totalStr;
-                // Stage pending order
-                const pendingOrder = {
-                    id:          `ORD-${Date.now()}`,
-                    placedAt:    new Date().toISOString(),
-                    items:       orderItems,
-                    total, subtotal, delivery,
-                    paymentMethod,
-                    address:     selectedAddress,
-                    status:      'Pending',
-                    addressId:   addressApiMap[selectedAddressIndex] || null
-                };
-                sessionStorage.setItem('pendingOrder', JSON.stringify(pendingOrder));
-                checkoutBtn.classList.add('hidden');
-                rzpPanel.classList.remove('hidden');
+                if (!isLoggedIn || !window.tapApi || !addressApiMap[selectedAddressIndex]) {
+                    showToast('error', 'Sign in required', 'Sign in and select a saved delivery address before paying online.');
+                    return;
+                }
+
+                checkoutBtn.disabled = true;
+                checkoutBtn.textContent = 'Preparing secure payment…';
+                try {
+                    pendingRazorpayOrder = await window.tapApi.orders.createRazorpayOrder(
+                        addressApiMap[selectedAddressIndex]
+                    );
+                    const totalStr = (pendingRazorpayOrder.amount / 100).toFixed(2);
+                    document.getElementById('rzpAmount').textContent = `₹${totalStr}`;
+                    document.getElementById('rzpAmountBtn').textContent = totalStr;
+                    checkoutBtn.classList.add('hidden');
+                    rzpPanel.classList.remove('hidden');
+                } catch (err) {
+                    pendingRazorpayOrder = null;
+                    showToast('error', 'Payment could not be prepared', err.message || 'Please try again.');
+                } finally {
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.innerHTML = '<span class="checkout-btn-icon">🛍️</span>Proceed to Checkout';
+                }
 
             } else {
                 // COD — place via API if logged in
