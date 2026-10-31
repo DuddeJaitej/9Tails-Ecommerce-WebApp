@@ -1,31 +1,8 @@
-# 9Tails Ecommerce
+<img width="1897" height="872" alt="Screenshot 2026-10-30 101307" src="https://github.com/user-attachments/assets/98fc0b5e-408d-46a4-9798-eec01312102a" /><img width="1897" height="872" alt="Screenshot 2026-10-30 101307" src="https://github.com/user-attachments/assets/4bca995d-0bab-4f93-ad2c-0927f471e9c0" /># 9Tails Ecommerce
 
 A full-stack ecommerce web application with a vanilla HTML/CSS/JavaScript storefront and a Spring Boot REST API backed by MySQL.
 
 Repository: https://github.com/DuddeJaitej/9Tails-Ecommerce-WebApp
-
-<img width="1460" height="758" alt="Screenshot 2026-10-30 101607" src="https://github.com/user-attachments/assets/3361c617-ed7d-4446-92c1-191f76828316" />
-<img width="580" height="877" alt="Screenshot 2026-10-30 101552" src="https://github.com/user-attachments/assets/e22000f1-4488-4820-a3ac-65810e8454d4" />
-<img width="1901" height="871" alt="Screenshot 2026-10-30 101534" src="https://github.com/user-attachments/assets/664a24fe-7dd3-43f4-8142-0eadc064868a" />
-<img width="735" height="457" alt="Screenshot 2026-10-30 101455" src="https://github.com/user-attachments/assets/619a92f4-7e56-4b33-bc91-3adc9dd3e0ae" />
-<img width="758" height="869" alt="Screenshot 2026-10-30 101448" src="https://github.com/user-attachments/assets/c74771d6-6e49-40f8-a90c-0328c7e30f15" />
-<img width="1570" height="827" alt="Screenshot 2026-10-30 101427" src="https://github.com/user-attachments/assets/0db8c138-b213-402e-874d-a1362cb5f502" />
-<img width="1892" height="778" alt="Screenshot 2026-10-30 101353" src="https://github.com/user-attachments/assets/3358f9e3-8d29-4df4-b382-5b109d50d229" />
-<img width="1902" height="867" alt="Screenshot 2026-10-30 101336" src="https://github.com/user-attachments/assets/187c02d2-9eec-4e7f-9e6b-2a407a52e4e8" />
-<img width="1897" height="872" alt="Screenshot 2026-10-30 101307" src="https://github.com/user-attachments/assets/bfb594fd-c2f6-4bf2-a9bd-e338c5b3b728" />
-<img width="1555" height="615" alt="Screenshot 2026-10-30 101244" src="https://github.com/user-attachments/assets/c9d50d12-b644-455b-9fad-d6ddac279c33" />
-<img width="1367" height="583" alt="Screenshot 2026-10-30 101222" src="https://github.com/user-attachments/assets/0bd4b1d7-5f24-4e70-a04a-58262a67ea5a" />
-<img width="1904" height="871" alt="Screenshot 2026-10-30 101143" src="https://github.com/user-attachments/assets/3c1381da-2c33-4686-9df0-d021ac7a88ff" />
-<img width="1903" height="864" alt="Screenshot 2026-10-30 101056" src="https://github.com/user-attachments/assets/8767eef5-9f28-451f-8d13-491007459163" />
-<img width="1897" height="399" alt="Screenshot 2026-10-30 105942" src="https://github.com/user-attachments/assets/7b413d04-2533-4bc3-b143-5df71faf6874" />
-<img width="1609" height="802" alt="Screenshot 2026-10-30 105923" src="https://github.com/user-attachments/assets/1fe783d0-f517-4560-9d58-233641798dc4" />
-<img width="1742" height="856" alt="Screenshot 2026-10-30 105843" src="https://github.com/user-attachments/assets/352d1b15-757d-42d4-ac7c-dcdb3a3cbc02" />
-<img width="1588" height="870" alt="Screenshot 2026-10-30 105759" src="https://github.com/user-attachments/assets/3e2e0c8e-b2a0-4425-bc4a-9ab4aba3cc49" />
-<img width="606" height="814" alt="Screenshot 2026-10-30 102549" src="https://github.com/user-attachments/assets/e6b84865-aeaa-4a43-bc92-d5f0970526ee" />
-<img width="615" height="817" alt="Screenshot 2026-10-30 102336" src="https://github.com/user-attachments/assets/bb531748-5996-4dbe-8bf0-3cb7db3e43ae" />
-<img width="629" height="599" alt="Screenshot 2026-10-30 102200" src="https://github.com/user-attachments/assets/ded2384e-38c6-4301-b516-6d2e44aa81b2" />
-<img width="844" height="837" alt="Screenshot 2026-10-30 102116" src="https://github.com/user-attachments/assets/45b02780-47a8-4d30-baed-44f7ec27240e" />
-
 
 
 ## Architecture
@@ -410,3 +387,36 @@ From the project root:
 cd backend
 mvn clean verify
 ```
+
+
+Screens
+
+![Uploading Screenshot 2026-10-30 101244.png…]()
+<img width="1367" height="583" alt="Screenshot 2026-10-30 101222" src="https://github.com/user-attachments/assets/377c5384-9e6e-4294-a0eb-75383e4c5913" />
+<img width="1904" height="871" alt="Screenshot 2026-10-30 101143" src="https://github.com/user-attachments/assets/8f147f72-1299-4a1a-b21f-b85d3d42ec7c" />
+<img width="1903" height="864" alt="Screenshot 2026-10-30 101056" src="https://github.com/user-attachments/assets/7d911120-2052-423a-9d46-bc4ebd38bfcb" />
+<img width="1897" height="872" alt="Screenshot 2026-10-30 101307" src="https://github.com/user-attachments/assets/90866089-82b0-49df-b8d2-9bfbe24f5397" />
+<img width="1902" height="867" alt="Screenshot 2026-10-30 101336" src="https://github.com/user-attachments/assets/fecb6d69-97e7-48ff-8fac-f01401eb04a2" />
+<img width="1892" height="778" alt="Screenshot 2026-10-30 101353" src="https://github.com/user-attachments/assets/7781b0fc-95e6-4bae-bc28-c3d5f6baf27a" />
+<img width="1570" height="827" alt="Screenshot 2026-10-30 101427" src="https://github.com/user-attachments/assets/cd6c98c5-5469-431c-91fe-95a90d2ad16d" />
+<img width="758" height="869" alt="Screenshot 2026-10-30 101448" src="https://github.com/user-attachments/assets/3cb399b3-be4e-46aa-b80d-6163b887620b" />
+<img width="735" height="457" alt="Screenshot 2026-10-30 101455" src="https://github.com/user-attachments/assets/a6599c38-42cf-423a-8117-21d8c6aae85b" />
+<img width="1901" height="871" alt="Screenshot 2026-10-30 101534" src="https://github.com/user-attachments/assets/0cdfbd8f-ddc3-423c-903b-986901288200" />
+<img width="580" height="877" alt="Screenshot 2026-10-30 101552" src="https://github.com/user-attachments/assets/ba8e4c19-ba5e-4c04-b7c9-f8174306a3c9" />
+<img width="1460" height="758" alt="Screenshot 2026-10-30 101607" src="https://github.com/user-attachments/assets/2038a467-1fc9-4442-ae94-3f5aaa8a318c" />
+<img width="844" height="837" alt="Screenshot 2026-10-30 102116" src="https://github.com/user-attachments/assets/1d476b0e-cdb4-43cc-9593-dd13ad4581c0" />
+<img width="629" height="599" alt="Screenshot 2026-10-30 102200" src="https://github.com/user-attachments/assets/1d14a02e-9ac5-4ec5-94c8-b29c0e40ee91" />
+<img width="615" height="817" alt="Screenshot 2026-10-30 102336" src="https://github.com/user-attachments/assets/5f3cd96c-34cc-4f56-b529-978d8f678499" />
+<img width="606" height="814" alt="Screenshot 2026-10-30 102549" src="https://github.com/user-attachments/assets/e8d13d9f-590d-43f5-bb52-4f924089fa0b" />
+<img width="1588" height="870" alt="Screenshot 2026-10-30 105759" src="https://github.com/user-attachments/assets/3e5a6710-e7e9-4001-ab98-23003bba3235" />
+<img width="1742" height="856" alt="Screenshot 2026-10-30 105843" src="https://github.com/user-attachments/assets/873bcc35-6cc5-4f27-8b32-552a5e624b8a" />
+<img width="1609" height="802" alt="Screenshot 2026-10-30 105923" src="https://github.com/user-attachments/assets/df3df296-05ec-48f7-830f-4e651a4f90d4" />
+
+
+
+
+
+
+
+
+
