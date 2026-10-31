@@ -208,6 +208,12 @@ cd backend
 mvn spring-boot:run
 ```
 
+You can also start it from the repository root without changing directories:
+
+```powershell
+mvn -f backend/pom.xml spring-boot:run
+```
+
 On the first run, Maven downloads the backend dependencies. Wait for Spring Boot to report that it has started. The API base URL is `http://localhost:8081/api`.
 
 ### 3. Start the frontend
@@ -219,6 +225,39 @@ python -m http.server 5500
 ```
 
 Open [http://localhost:5500/Home/Home.html](http://localhost:5500/Home/Home.html) in your browser. Keep both terminals running. Do not open `Home/Home.html` directly using a `file://` URL; the local web server is needed for images and API requests.
+
+#### Use VS Code Live Server instead
+
+Live Server is an alternative to the Python frontend server above; run only one frontend server at a time.
+
+1. Open the repository root folder in VS Code. It must be the folder containing both `Home` and `Assets`, not the `Home` folder by itself.
+2. Install the **Live Server** extension if it is not already installed.
+3. In the Explorer, open `Home/Home.html`, then select **Go Live** in the VS Code status bar (or right-click the file and select **Open with Live Server**).
+4. Open the URL Live Server reports. With its usual port setting, the storefront is `http://127.0.0.1:5500/Home/Home.html`.
+5. Keep the Spring Boot API running separately at `http://localhost:8081/api`. Live Server serves the HTML, CSS, JavaScript, and `Assets`; it does not start the backend or database.
+
+Serving from the repository root keeps product images and other `../Assets/...` references available. The project API allows local origins such as `localhost` and `127.0.0.1` on different ports. If the storefront cannot load products, check that the backend is running and open `http://localhost:8081/api/products` directly.
+
+#### Frontend pages to open
+
+Use the storefront as the normal entry point, then navigate using the page links and account-specific controls. For direct development or testing, these files are served under `/Home/`:
+
+| File | Local URL | Purpose / access |
+|------|-----------|------------------|
+| `Home/Home.html` | `http://127.0.0.1:5500/Home/Home.html` | Storefront, catalog, sign-in, and customer registration |
+| `Home/ProductDetail.html` | `http://127.0.0.1:5500/Home/ProductDetail.html?id=<product-id>` | Product details; use a product's numeric database ID |
+| `Home/Cart.html` | `http://127.0.0.1:5500/Home/Cart.html` | Cart and checkout; sign in to place an order |
+| `Home/Orders.html` | `http://127.0.0.1:5500/Home/Orders.html` | Signed-in customer's order history |
+| `Home/OrderTracking.html` | `http://127.0.0.1:5500/Home/OrderTracking.html?id=<order-id>` | Order status and delivery tracking; use the order's numeric database ID |
+| `Home/Admin.html` | `http://127.0.0.1:5500/Home/Admin.html` | Administrator dashboard and management tools |
+| `Home/AdminRegister.html` | `http://127.0.0.1:5500/Home/AdminRegister.html` | Register another administrator; requires an administrator session |
+| `Home/Operations.html` | `http://127.0.0.1:5500/Home/Operations.html` | Owner, warehouse, and delivery operations; sign in with an authorized account |
+| `Home/Delivery.html` | `http://127.0.0.1:5500/Home/Delivery.html` | Delivery-agent workspace |
+| `Home/DeliveryRegister.html` | `http://127.0.0.1:5500/Home/DeliveryRegister.html` | Choose delivery-agent or warehouse-operator registration |
+| `Home/DeliveryAgentRegister.html` | `http://127.0.0.1:5500/Home/DeliveryAgentRegister.html` | Register a delivery agent under an approved warehouse |
+| `Home/WarehouseRegister.html` | `http://127.0.0.1:5500/Home/WarehouseRegister.html` | Register a warehouse operator and hub |
+
+The angle-bracket values in the product and order URLs are placeholders; replace them with real numeric IDs and omit the brackets. Opening a protected page does not grant access: sign in with an account that has the required role. New warehouse hubs and delivery agents require approval before they can process routes.
 
 For testing on a phone connected to the same Wi-Fi, start the frontend server with
 `python -m http.server 5500 --bind 0.0.0.0` and open
@@ -285,7 +324,11 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 | Component | URL |
 |-----------|-----|
 | Storefront | http://localhost:5500/Home/Home.html |
+| Cart | http://localhost:5500/Home/Cart.html |
+| Orders | http://localhost:5500/Home/Orders.html |
 | Admin dashboard | http://localhost:5500/Home/Admin.html |
+| Operations workspace | http://localhost:5500/Home/Operations.html |
+| Delivery workspace | http://localhost:5500/Home/Delivery.html |
 | API base URL | http://localhost:8081/api |
 | Product catalog API | http://localhost:8081/api/products |
 
