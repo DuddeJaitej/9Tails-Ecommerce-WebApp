@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" fill="none">
+  <defs>
+    <linearGradient id="bag" x1="74" y1="53" x2="165" y2="151" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB2CB"/>
+      <stop offset="1" stop-color="#F06D9D"/>
+    </linearGradient>
+    <linearGradient id="side" x1="148" y1="79" x2="180" y2="142" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D95787"/>
+      <stop offset="1" stop-color="#B64174"/>
+    </linearGradient>
+    <linearGradient id="handle" x1="93" y1="45" x2="139" y2="83" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8EEE0"/>
+      <stop offset="1" stop-color="#73BEAA"/>
+    </linearGradient>
+    <filter id="shadow" x="31" y="118" width="181" height="48" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+  <ellipse cx="121" cy="142" fill="#58445A" fill-opacity=".18" filter="url(#shadow)" rx="72" ry="12"/>
+  <path d="M84 67c0-17 13-31 30-31s30 14 30 31" stroke="url(#handle)" stroke-linecap="round" stroke-width="9"/>
+  <path d="m68 66 13 83c1 7 7 12 14 12h62c7 0 13-5 14-12l13-83H68Z" fill="url(#bag)"/>
+  <path d="m147 66 37 0-13 83c-1 7-7 12-14 12h-14l4-95Z" fill="url(#side)"/>
+  <path d="m101 99 15 15 28-30" stroke="#FFF9FC" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+  <circle cx="56" cy="72" r="5" fill="#F4C968"/>
+  <circle cx="191" cy="47" r="4" fill="#8CCDBA"/>
+  <path d="m184 97 4 8 8 4-8 4-4 8-4-8-8-4 8-4 4-8Z" fill="#F4C968"/>
+  <path d="m53 111 3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6Z" fill="#C5A7D4"/>
+</svg>

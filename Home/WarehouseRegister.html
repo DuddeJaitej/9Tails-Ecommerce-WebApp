@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#172124">
+    <title>Register Warehouse Operator | 9Tails</title>
+    <link rel="icon" type="image/svg+xml" href="../Assets/9tails-logo.svg">
+    <link rel="stylesheet" href="Operations.css">
+    <link rel="stylesheet" href="Delivery.css">
+    <script>window.TAP_API_TOKEN_KEY = 'tap_delivery_jwt'; window.TAP_API_ROLE_SCOPED_TOKENS = true;</script>
+    <script src="maps.js" defer></script>
+    <script src="api.js" defer></script>
+    <script src="DeliveryRegister.js" defer></script>
+</head>
+<body data-registration-role="WAREHOUSE_OPERATOR">
+    <main class="login-shell">
+        <a class="brand" href="DeliveryRegister.html"><span>9</span>Tails</a>
+        <p class="eyebrow">Warehouse operations</p>
+        <h1>Register as a warehouse operator</h1>
+        <p class="muted">Submit your operator account and warehouse location for administrator review. Operations become available after approval.</p>
+        <form id="deliveryRegisterForm" class="stack-form">
+            <label for="deliveryRegisterName">Full name</label>
+            <input id="deliveryRegisterName" type="text" autocomplete="name" maxlength="100" required>
+            <label for="deliveryRegisterEmail">Work email</label>
+            <input id="deliveryRegisterEmail" type="email" autocomplete="email" maxlength="254" required>
+            <label for="deliveryRegisterPassword">Password (at least 12 characters)</label>
+            <input id="deliveryRegisterPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+            <section id="warehouseApplicationField">
+                <h2>Warehouse details</h2>
+                <p class="muted">The warehouse stays inactive until an administrator reviews and approves its location.</p>
+                <label for="warehouseName">Warehouse name</label>
+                <input id="warehouseName" type="text" maxlength="100" required>
+                <label for="warehouseLocationSearch">Search exact address or place</label>
+                <div class="warehouse-location-search">
+                    <input id="warehouseLocationSearch" type="search" maxlength="255"
+                           placeholder="e.g. Plot 12, Road No. 5, Jubilee Hills, Hyderabad"
+                           autocomplete="street-address">
+                    <button class="button" id="warehouseLocationSearchButton" type="button">Search location</button>
+                </div>
+                <small class="muted">Include building or plot number, road number, locality, city, and PIN code for the most precise result.</small>
+                <div id="warehouseLocationResults" class="warehouse-location-results" aria-live="polite"></div>
+                <label for="warehouseStreet">Selected street address</label>
+                <input id="warehouseStreet" type="text" maxlength="255" autocomplete="street-address" required>
+                <label for="warehouseCity">City</label>
+                <input id="warehouseCity" type="text" maxlength="100" required>
+                <label for="warehouseState">State</label>
+                <input id="warehouseState" type="text" maxlength="100" required>
+                <label for="warehousePostalCode">PIN code</label>
+                <input id="warehousePostalCode" type="text" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" required>
+                <label>Verify the warehouse location</label>
+                <div id="warehouseRegistrationMap" class="google-map-panel">
+                    <iframe id="warehouseGoogleMapPreview" class="warehouse-map-preview"
+                            title="Google Maps warehouse location preview"
+                            src="https://www.google.com/maps?output=embed&amp;q=20.5937%2C78.9629&amp;z=5"
+                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                            allowfullscreen></iframe>
+                    <a id="warehouseGoogleMapsLink" class="button button-light hidden" target="_blank"
+                       rel="noopener noreferrer">Open selected location in Google Maps</a>
+                </div>
+                <small class="muted" id="warehouseMapMessage">Search for the address and choose the matching result. Its exact coordinates will be saved.</small>
+                <small class="muted" id="warehouseSelectedLocation" aria-live="polite">No location selected yet.</small>
+                <input id="warehouseLatitude" type="hidden">
+                <input id="warehouseLongitude" type="hidden">
+                <small class="muted">Check the selected address in Google Maps before submitting.</small>
+            </section>
+            <button class="button button-primary" id="deliveryRegisterButton" type="submit">Submit warehouse application</button>
+            <p class="feedback" id="deliveryRegisterFeedback" role="alert"></p>
+        </form>
+        <div class="delivery-auth-switch">
+            <span>Need a different staff account?</span>
+            <a href="DeliveryAgentRegister.html">Register as a delivery agent</a>
+            <a href="Delivery.html">Back to staff sign in</a>
+        </div>
+    </main>
+</body>
+</html>

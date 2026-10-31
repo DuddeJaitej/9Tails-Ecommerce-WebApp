@@ -14,6 +14,10 @@ public class ProductDto {
     private Long id;
     private String name;
     private String description;
+    private String shortDescription;
+    private String specifications;
+    private String productCondition;
+    private String returnPolicy;
     private BigDecimal price;
     private BigDecimal originalPrice;
     private Integer stock;
@@ -25,5 +29,6 @@ public class ProductDto {
     private boolean fastDelivery;
     private Long categoryId;
     private String categoryName;
+    private Long businessLocationId;
     private LocalDateTime createdAt;
 }

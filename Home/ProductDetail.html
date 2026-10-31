@@ -43,11 +43,25 @@
                             <div class="profile-menu hidden" role="menu" aria-label="User menu">
                                 <div class="profile-menu-card">
                                     <p class="profile-menu-email"></p>
+                                    <a class="operations-dashboard-link hidden" href="Operations.html">Operations Dashboard</a>
                                     <button class="logout-btn" type="button">Logout</button>
                                 </div>
                             </div>
                         </li>
                     </ul>
+                </div>
+                <div class="notification-nav hidden" id="customerNotificationNav">
+                    <button class="notification-bell" id="customerNotificationBell" type="button" aria-label="Notifications" aria-expanded="false">
+                        <svg class="notification-bell-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                            <path d="M10 21h4" />
+                        </svg>
+                        <span class="notification-count hidden" id="customerNotificationCount">0</span>
+                    </button>
+                    <div class="notification-menu hidden" id="customerNotificationMenu" aria-label="Notifications">
+                        <div class="notification-menu-heading"><strong>Notifications</strong><button class="notification-mark-all" id="customerNotificationMarkAll" type="button">Mark all read</button></div>
+                        <div class="notification-menu-list" id="customerNotificationList"></div>
+                    </div>
                 </div>
             </nav>
         </div>
@@ -74,6 +88,7 @@
                 <!-- Main image -->
                 <div class="pd-main-image-wrap">
                     <img class="pd-main-image" id="pdMainImage" src="" alt="Product image" />
+                    <button class="pd-wishlist-btn" id="pdWishlist" type="button" aria-label="Add to wishlist" aria-pressed="false" title="Add to wishlist">♡</button>
                     <div class="pd-zoom-hint" aria-hidden="true">Click image to zoom</div>
                 </div>
             </div>
@@ -91,10 +106,19 @@
 
                 <div class="pd-price-row">
                     <span class="pd-price" id="pdPrice"></span>
+                    <del class="pd-original-price" id="pdOriginalPrice" hidden></del>
+                    <span class="pd-discount-badge" id="pdDiscountBadge" hidden></span>
                     <span class="pd-delivery-badge" id="pdDelivery"></span>
                 </div>
 
                 <p class="pd-description" id="pdDescription"></p>
+
+                <section class="pd-specifications" aria-labelledby="pdSpecificationsHeading">
+                    <div class="pd-specifications-heading">
+                        <h2 id="pdSpecificationsHeading">Specifications</h2>
+                    </div>
+                    <p id="pdSpecifications">Specifications have not been added yet.</p>
+                </section>
 
                 <div class="pd-stock-row">
                     <span class="pd-stock-badge" id="pdStock"></span>
@@ -107,8 +131,12 @@
                         <button class="pd-qty-btn" id="pdQtyInc" aria-label="Increase quantity">+</button>
                     </div>
                     <button class="pd-add-cart-btn" id="pdAddCart" type="button">Add to Cart</button>
-                    <button class="pd-wishlist-btn" id="pdWishlist" type="button" aria-label="Add to wishlist">♥ Wishlist</button>
                 </div>
+
+                <section class="pd-return-policy" aria-labelledby="pdReturnPolicyHeading">
+                    <h2 id="pdReturnPolicyHeading">Return &amp; exchange policy</h2>
+                    <p id="pdReturnPolicy">No return or exchange policy provided.</p>
+                </section>
 
                 <!-- Feature highlights -->
                 <ul class="pd-highlights">
@@ -214,6 +242,7 @@
     </script>
     <script src="api.js"></script>
     <script src="auth.js"></script>
+    <script src="notifications.js"></script>
     <script src="ProductDetail.js"></script>
     <script>
         const navToggle = document.getElementById('navToggle');

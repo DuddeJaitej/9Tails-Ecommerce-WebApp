@@ -8,16 +8,17 @@ import com.nintails.ecommerce.repository.ProductRepository;
 import com.nintails.ecommerce.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
- * Reconciles the catalog on every startup without duplicating existing products.
- * Each product uses the exact image file that exists in Assets/Products/.
+ * Seeds the hard-coded demo catalog only when explicitly enabled and provisions configured admin access.
  */
 @Component
 @RequiredArgsConstructor
@@ -29,13 +30,27 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository     userRepository;
     private final PasswordEncoder    passwordEncoder;
 
+    @Value("${app.admin.email:}")
+    private String adminEmail;
+
+    @Value("${app.admin.password:}")
+    private String adminPassword;
+
+    @Value("${app.admin.reset-password-on-startup:false}")
+    private boolean resetAdminPasswordOnStartup;
+
+    @Value("${app.catalog.seed-demo-data:false}")
+    private boolean seedDemoData;
+
     @Override
     @Transactional
     public void run(String... args) {
-        log.info("Synchronizing product catalog...");
+        ensureStandardCategories();
+        if (seedDemoData) {
+            log.info("Synchronizing demo product catalog...");
 
-        // ── Categories ────────────────────────────────────────────────────────
-        Category fashion  = category("Fashion", "Clothing and apparel", "Assets/Products/Fashion/fashion1.avif");
+            // ── Categories ────────────────────────────────────────────────────────
+            Category fashion  = category("Fashion", "Clothing and apparel", "Assets/Products/Fashion/fashion1.avif");
         Category jewelry  = category("Jewelry", "Rings, necklaces and bracelets", "Assets/Products/Jewelry/jewelry1.avif");
         Category watches  = category("Watches", "Luxury and casual watches", "Assets/Products/Watches/watches1.avif");
         Category bags     = category("Bags", "Handbags, backpacks and travel", "Assets/Products/bags/bag1.avif");
@@ -52,7 +67,7 @@ public class DataInitializer implements CommandLineRunner {
         p("Ethnic Embroidered Top",     "Hand-embroidered cotton top with traditional patterns.",         1299, 1699, 40, "Assets/Products/Fashion/fashion4.avif", 4.4, 156, fashion);
         p("Relaxed Linen Shirt",        "Breathable linen shirt perfect for summer.",                     999, 1399, 55, "Assets/Products/Fashion/fashion5.avif", 4.2,  88, fashion);
         p("Boho Maxi Skirt",            "Flowy maxi skirt with bohemian print.",                         1099, 1499, 32, "Assets/Products/Fashion/fashion6.avif", 4.3, 112, fashion);
-        p("Crop Jacket",                "Trendy cropped jacket for casual outings.",                     1499, 1999, 25, "Assets/Products/Fashion/fashion7.avif", 4.6, 178, fashion);
+        p("Crop Jacket",                "Trendy cropped jacket for casual outings.",                     1499, 2499, 25, "Assets/Products/Fashion/fashion7.avif", 4.6, 178, fashion);
         p("Casual Polo Shirt",          "Comfortable polo shirt for everyday wear.",                      799, 1099, 60, "Assets/Products/Fashion/fashion8.webp", 4.1,  73, fashion);
         p("Formal Blazer",              "Sharp formal blazer for office and events.",                    2499, 3499, 18, "Assets/Products/Fashion/fashion9.avif", 4.8, 245, fashion);
 
@@ -134,8 +149,8 @@ public class DataInitializer implements CommandLineRunner {
         p("Mini Drone with Camera",     "Compact folding drone with 1080p HD camera.",                 5999, 7999, 10, "Assets/Products/Gadgets/gadgets2.webp", 4.5, 156, gadgets);
         p("USB-C Hub 7-in-1",           "Multiport USB-C hub with HDMI, SD card, USB 3.0.",             899, 1299, 45, "Assets/Products/Gadgets/gadgets3.webp", 4.3, 223, gadgets);
 
-        // ── Books (books1, book2–7) ───────────────────────────────────────────
-        p("Atomic Habits",              "James Clear — Build good habits and break bad ones.",           399,  499, 100, "Assets/Products/Books/books1.webp", 4.9, 1250, books);
+            // ── Books (books1, book2–7) ───────────────────────────────────────────
+            p("Atomic Habits",              "James Clear — Build good habits and break bad ones.",           399,  499, 100, "Assets/Products/Books/books1.webp", 4.9, 1250, books);
         p("The Alchemist",              "Paulo Coelho — A magical story about following your dreams.",   299,  399,  80, "Assets/Products/Books/book2.webp",  4.8,  980, books);
         p("Deep Work",                  "Cal Newport — Rules for focused success in a distracted world.",349,  449,  90, "Assets/Products/Books/book3.webp",  4.7,  765, books);
         p("The Psychology of Money",    "Morgan Housel — Timeless lessons on wealth and happiness.",    379,  499,  75, "Assets/Products/Books/book4.webp",  4.8,  892, books);
@@ -143,21 +158,105 @@ public class DataInitializer implements CommandLineRunner {
         p("Think and Grow Rich",        "Napoleon Hill — The classic guide to success mindset.",        349,  449,  70, "Assets/Products/Books/book6.webp",  4.7,  934, books);
         p("The 48 Laws of Power",       "Robert Greene — Laws that govern power dynamics.",             449,  599,  65, "Assets/Products/Books/book7.webp",  4.5,  678, books);
 
-        // ── Admin user ────────────────────────────────────────────────────────
-        if (!userRepository.existsByEmail("admin@9tails.com")) {
-            userRepository.save(User.builder()
-                    .fullName("Admin")
-                    .email("admin@9tails.com")
-                    .password(passwordEncoder.encode("Admin@123"))
-                    .role(User.Role.ADMIN)
-                    .build());
+            log.info("Demo catalog synchronized: {} categories, {} products.",
+                    categoryRepository.count(), productRepository.count());
+        } else {
+            log.info("Demo catalog seeding is disabled.");
         }
 
-        log.info("Database seeded: {} categories, {} products.",
-                categoryRepository.count(), productRepository.count());
+        initializeAdminAccount();
+    }
+
+    private void initializeAdminAccount() {
+        boolean hasAdminEmail = adminEmail != null && !adminEmail.isBlank();
+        boolean hasAdminPassword = adminPassword != null && !adminPassword.isBlank();
+        if (hasAdminEmail != hasAdminPassword) {
+            skipAdminBootstrap("Configure both ADMIN_EMAIL and ADMIN_PASSWORD to provision the administrator account.");
+            return;
+        }
+
+        if (hasAdminEmail) {
+            String normalizedEmail = adminEmail.trim().toLowerCase();
+            if (!normalizedEmail.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
+                    || adminPassword.length() < 12) {
+                skipAdminBootstrap(
+                        "ADMIN_EMAIL must be a valid email and ADMIN_PASSWORD must contain at least 12 characters.");
+                return;
+            }
+
+            User configuredAdmin = userRepository.findByEmail(normalizedEmail).orElse(null);
+            if (configuredAdmin == null) {
+                userRepository.save(User.builder()
+                        .fullName("Store Administrator")
+                        .email(normalizedEmail)
+                        .password(passwordEncoder.encode(adminPassword))
+                        .role(User.Role.ADMIN)
+                        .build());
+                log.info("Provisioned configured administrator account.");
+                disableLegacyDefaultAdmin(normalizedEmail);
+                return;
+            }
+            if (configuredAdmin.getRole() != User.Role.ADMIN) {
+                skipAdminBootstrap(
+                        "ADMIN_EMAIL belongs to a non-administrator account. Choose a separate admin email.");
+                return;
+            }
+            if (resetAdminPasswordOnStartup) {
+                configuredAdmin.setPassword(passwordEncoder.encode(adminPassword));
+                userRepository.save(configuredAdmin);
+                log.warn("Reset the configured administrator password from startup configuration.");
+            } else if (isLegacyDefaultPassword(configuredAdmin.getPassword())) {
+                configuredAdmin.setPassword(passwordEncoder.encode(adminPassword));
+                userRepository.save(configuredAdmin);
+                log.info("Replaced the known default administrator password with the configured password.");
+            }
+            disableLegacyDefaultAdmin(normalizedEmail);
+            return;
+        }
+
+        skipAdminBootstrap("Admin bootstrap skipped: configure ADMIN_EMAIL and ADMIN_PASSWORD in backend/.env.");
+    }
+
+    private void skipAdminBootstrap(String reason) {
+        disableLegacyDefaultAdmin(null);
+        log.warn("{} The application will continue without provisioning or resetting an administrator account.",
+                reason);
+    }
+
+    private void disableLegacyDefaultAdmin(String configuredEmail) {
+        if ("admin@9tails.com".equals(configuredEmail)) {
+            return;
+        }
+        userRepository.findByEmail("admin@9tails.com")
+                .filter(user -> user.getRole() == User.Role.ADMIN)
+                .filter(user -> isLegacyDefaultPassword(user.getPassword()))
+                .ifPresent(user -> {
+                    user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+                    userRepository.save(user);
+                    log.warn("Disabled the legacy default admin password. Configure ADMIN_EMAIL and "
+                            + "ADMIN_PASSWORD in backend/.env to enable admin sign-in.");
+                });
+    }
+
+    private boolean isLegacyDefaultPassword(String encodedPassword) {
+        String legacyPasswordHash = "$2a$12$zQk1EyD7Nf5lzBkkVlWFvOhBFIHdLqzCBfnVOg7S1SYvPkMH7XoGC";
+        return passwordEncoder.matches("Admin@123", encodedPassword)
+                || legacyPasswordHash.equals(encodedPassword);
     }
 
     private Category save(Category c) { return categoryRepository.save(c); }
+
+    private void ensureStandardCategories() {
+        category("Fashion", "Clothing and apparel", "Assets/Products/Fashion/fashion1.avif");
+        category("Jewelry", "Rings, necklaces and bracelets", "Assets/Products/Jewelry/jewelry1.avif");
+        category("Watches", "Luxury and casual watches", "Assets/Products/Watches/watches1.avif");
+        category("Bags", "Handbags, backpacks and travel", "Assets/Products/bags/bag1.avif");
+        category("Footwear", "Shoes and sandals", "Assets/Products/Footwear/footwear1.avif");
+        category("Beauty & Fragrance", "Perfumes and skincare", "Assets/Products/Beauty & Fragrance/fregrance1.avif");
+        category("Audio & Electronics", "Headphones and speakers", "Assets/Products/Audio & Electronics/audio1.webp");
+        category("Gadgets", "Smart devices and accessories", "Assets/Products/Gadgets/gadgets4.webp");
+        category("Books", "Fiction and educational books", "Assets/Products/Books/books1.webp");
+    }
 
     private Category category(String name, String desc, String img) {
         return categoryRepository.findByNameIgnoreCase(name)

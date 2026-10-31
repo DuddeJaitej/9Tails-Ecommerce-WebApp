@@ -102,15 +102,50 @@
         const authModal  = root.getElementById('authModal');
         const authClose  = root.getElementById('authClose');
         const authForm   = root.getElementById('authForm');
+        const authBody   = root.querySelector('.auth-body');
+        if (authBody && !root.getElementById('customerForgotLink')) {
+            const googleButton = root.getElementById('googleSignIn');
+            const divider = root.querySelector('.auth-divider');
+            const passwordResetUi = `
+                <button type="button" class="customer-forgot-link" id="customerForgotLink">Forgot password?</button>
+                <form id="customerForgotForm" class="customer-password-form hidden">
+                    <p>Enter your account email. If it belongs to a customer account, we’ll send a one-time reset link.</p>
+                    <label for="customerForgotEmail">Email</label>
+                    <input id="customerForgotEmail" type="email" autocomplete="email" maxlength="254" required>
+                    <button class="auth-submit" id="customerForgotSubmit" type="submit">Send reset link</button>
+                    <button class="customer-form-back" id="customerForgotBack" type="button">Back to login</button>
+                </form>
+                <form id="customerResetForm" class="customer-password-form hidden">
+                    <p>Choose a new password. Reset links expire after 30 minutes and can only be used once.</p>
+                    <input id="customerResetToken" type="hidden">
+                    <label for="customerNewPassword">New password</label>
+                    <input id="customerNewPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                    <label for="customerConfirmPassword">Confirm new password</label>
+                    <input id="customerConfirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                    <button class="auth-submit" id="customerResetSubmit" type="submit">Reset password</button>
+                </form>
+                <p class="customer-password-feedback hidden" id="customerPasswordFeedback" role="status"></p>`;
+            if (divider) divider.insertAdjacentHTML('beforebegin', passwordResetUi);
+            else if (googleButton) googleButton.insertAdjacentHTML('afterend', passwordResetUi);
+            else authBody.insertAdjacentHTML('beforeend', passwordResetUi);
+        }
         const authTabs   = root.querySelectorAll('.auth-tab');
+        const authFooter = root.querySelector('.auth-footer');
         const authNameGrp= root.querySelector('.auth-name-group');
         const authSubmit = root.querySelector('.auth-submit');
         const authSwitchTx= root.querySelector('.auth-switch-text');
         const googleBtn  = root.getElementById('googleSignIn');
+        const authDivider = root.querySelector('.auth-divider');
+        const customerForgotLink = root.getElementById('customerForgotLink');
+        const customerForgotForm = root.getElementById('customerForgotForm');
+        const customerResetForm = root.getElementById('customerResetForm');
+        const customerPasswordFeedback = root.getElementById('customerPasswordFeedback');
         const pageOverlay= root.getElementById('pageOverlay');
         const profileTrig= root.querySelector('.profile-trigger');
         const profileMenu= root.querySelector('.profile-menu');
         const profileMenuEmail = root.querySelector('.profile-menu-email');
+        const adminDashboardLink = root.querySelector('.admin-dashboard-link');
+        const operationsDashboardLink = root.querySelector('.operations-dashboard-link');
         const emailInput = root.getElementById('email');
         const pwdInput   = root.getElementById('password');
         const nameInput  = root.getElementById('authFullName');
@@ -129,9 +164,16 @@
                     profilePhoto.onerror = () => { profilePhoto.src = buildAvatar(user.name); };
                 }
                 if (profileMenuEmail) profileMenuEmail.textContent = user.email;
+                if (adminDashboardLink) adminDashboardLink.classList.toggle('hidden', user.role !== 'ADMIN');
+                if (operationsDashboardLink) {
+                    operationsDashboardLink.classList.toggle('hidden',
+                        !['OWNER', 'DELIVERY_AGENT', 'WAREHOUSE_OPERATOR'].includes(user.role));
+                }
             } else {
                 if (loginBtn)   loginBtn.classList.remove('hidden');
                 if (navProfile) navProfile.classList.add('hidden');
+                if (adminDashboardLink) adminDashboardLink.classList.add('hidden');
+                if (operationsDashboardLink) operationsDashboardLink.classList.add('hidden');
             }
         }
         refreshUI();
@@ -142,7 +184,7 @@
         });
 
         // ── Modal helpers ───────────────────────────────────────────────────
-        function openModal(mode = 'login') { setMode(mode); authModal.classList.remove('hidden'); if (pageOverlay) pageOverlay.classList.remove('hidden'); }
+        function openModal(mode = 'login') { setMode(mode); showCustomerAuthView('login'); authModal.classList.remove('hidden'); if (pageOverlay) pageOverlay.classList.remove('hidden'); }
         function closeModal() { authModal.classList.add('hidden'); if (pageOverlay) pageOverlay.classList.add('hidden'); authForm.reset(); }
         openActiveAuthModal = openModal;
 
@@ -164,10 +206,30 @@
             authTabs.forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
             if (authNameGrp) authNameGrp.classList.toggle('hidden', mode !== 'register');
             if (authSubmit)  authSubmit.textContent = mode === 'register' ? 'Create Account' : 'Login';
+            if (customerForgotLink) customerForgotLink.classList.toggle('hidden', mode !== 'login');
             if (authSwitchTx) authSwitchTx.innerHTML = mode === 'register'
                 ? 'Already have an account? <button type="button" class="switch-auth" data-mode="login">Login</button>'
                 : "Don't have an account? <button type=\"button\" class=\"switch-auth\" data-mode=\"register\">Register</button>";
             bindSwitchBtns();
+            showCustomerAuthView('login');
+        }
+
+        function showCustomerAuthView(view) {
+            const resetMode = view === 'reset';
+            const forgotMode = view === 'forgot';
+            authTabs.forEach(tab => tab.classList.toggle('hidden', resetMode || forgotMode));
+            authForm.classList.toggle('hidden', resetMode || forgotMode);
+            if (authFooter) authFooter.classList.toggle('hidden', resetMode || forgotMode);
+            if (customerForgotLink) customerForgotLink.classList.toggle('hidden', resetMode || forgotMode);
+            if (authDivider) authDivider.classList.toggle('hidden', resetMode || forgotMode);
+            if (googleBtn) googleBtn.classList.toggle('hidden', resetMode || forgotMode);
+            if (customerForgotForm) customerForgotForm.classList.toggle('hidden', !forgotMode);
+            if (customerResetForm) customerResetForm.classList.toggle('hidden', !resetMode);
+            if (customerPasswordFeedback) {
+                customerPasswordFeedback.classList.add('hidden');
+                customerPasswordFeedback.textContent = '';
+                customerPasswordFeedback.classList.remove('feedback-success');
+            }
         }
 
         function bindSwitchBtns() {
@@ -212,6 +274,82 @@
                 }
             }
         });
+
+        if (customerForgotLink && customerForgotForm && customerResetForm) {
+            customerForgotLink.addEventListener('click', () => {
+                document.getElementById('customerForgotEmail').value = emailInput.value.trim().toLowerCase();
+                showCustomerAuthView('forgot');
+            });
+
+            document.getElementById('customerForgotBack').addEventListener('click', () => {
+                showCustomerAuthView('login');
+            });
+
+            customerForgotForm.addEventListener('submit', async event => {
+                event.preventDefault();
+                const button = document.getElementById('customerForgotSubmit');
+                button.disabled = true;
+                button.textContent = 'Sending…';
+                try {
+                    const email = document.getElementById('customerForgotEmail').value.trim().toLowerCase();
+                    const result = await window.tapApi.auth.requestCustomerPasswordReset(email);
+                    customerPasswordFeedback.textContent = result?.message
+                        || 'If a customer account exists for that email, a password reset link has been sent.';
+                    customerPasswordFeedback.classList.remove('hidden');
+                    customerPasswordFeedback.classList.add('feedback-success');
+                } catch (error) {
+                    customerPasswordFeedback.textContent =
+                        error.message || 'The reset email could not be sent. Please try again.';
+                    customerPasswordFeedback.classList.remove('hidden', 'feedback-success');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Send reset link';
+                }
+            });
+
+            customerResetForm.addEventListener('submit', async event => {
+                event.preventDefault();
+                const password = document.getElementById('customerNewPassword').value;
+                const confirmation = document.getElementById('customerConfirmPassword').value;
+                const token = document.getElementById('customerResetToken').value;
+                const button = document.getElementById('customerResetSubmit');
+                if (!token || password !== confirmation) {
+                    customerPasswordFeedback.textContent = !token
+                        ? 'This reset link is incomplete. Request a new password reset email.'
+                        : 'The passwords do not match.';
+                    customerPasswordFeedback.classList.remove('hidden', 'feedback-success');
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Resetting…';
+                try {
+                    const result = await window.tapApi.auth.resetCustomerPassword(token, password);
+                    customerResetForm.reset();
+                    setMode('login');
+                    showCustomerAuthView('login');
+                    customerPasswordFeedback.textContent =
+                        result?.message || 'Password reset successfully. Sign in with your new password.';
+                    customerPasswordFeedback.classList.remove('hidden');
+                    customerPasswordFeedback.classList.add('feedback-success');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (error) {
+                    customerPasswordFeedback.textContent =
+                        error.message || 'The reset link could not be used. Request a new link.';
+                    customerPasswordFeedback.classList.remove('hidden', 'feedback-success');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Reset password';
+                }
+            });
+
+            const resetToken = new URLSearchParams(window.location.search).get('resetToken');
+            if (resetToken) {
+                document.getElementById('customerResetToken').value = resetToken;
+                openModal('login');
+                showCustomerAuthView('reset');
+            }
+        }
 
         // ── Google OAuth exchanged for a Spring Boot JWT ─────────────────────
         let tokenClient = null;

@@ -13,6 +13,18 @@ public class ProductRequest {
 
     private String description;
 
+    @Size(max = 500)
+    private String shortDescription;
+
+    @Size(max = 10000)
+    private String specifications;
+
+    @Size(max = 100)
+    private String productCondition;
+
+    @Size(max = 1000)
+    private String returnPolicy;
+
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.0", message = "Price must be positive")
     private BigDecimal price;
@@ -33,4 +45,6 @@ public class ProductRequest {
 
     @NotNull(message = "Category ID is required")
     private Long categoryId;
+
+    private Long businessLocationId;
 }

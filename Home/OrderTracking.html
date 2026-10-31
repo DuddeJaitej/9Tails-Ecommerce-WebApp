@@ -41,11 +41,25 @@
                             <div class="profile-menu hidden" role="menu" aria-label="User menu">
                                 <div class="profile-menu-card">
                                     <p class="profile-menu-email"></p>
+                                    <a class="operations-dashboard-link hidden" href="Operations.html">Operations Dashboard</a>
                                     <button class="logout-btn" type="button">Logout</button>
                                 </div>
                             </div>
                         </li>
                     </ul>
+                </div>
+                <div class="notification-nav hidden" id="customerNotificationNav">
+                    <button class="notification-bell" id="customerNotificationBell" type="button" aria-label="Notifications" aria-expanded="false">
+                        <svg class="notification-bell-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                            <path d="M10 21h4" />
+                        </svg>
+                        <span class="notification-count hidden" id="customerNotificationCount">0</span>
+                    </button>
+                    <div class="notification-menu hidden" id="customerNotificationMenu" aria-label="Notifications">
+                        <div class="notification-menu-heading"><strong>Notifications</strong><button class="notification-mark-all" id="customerNotificationMarkAll" type="button">Mark all read</button></div>
+                        <div class="notification-menu-list" id="customerNotificationList"></div>
+                    </div>
                 </div>
             </nav>
         </div>
@@ -100,9 +114,15 @@
                 <!-- Timeline — steps are built dynamically by OrderTracking.js -->
                 <section class="tracking-timeline-section">
                     <h3>Shipping Progress</h3>
+                    <div class="fulfillment-timeline-list" id="fulfillmentTimelineList" aria-live="polite"></div>
                     <div class="tracking-timeline" id="trackingTimeline">
                         <div class="timeline-progress-bar" id="timelineProgressBar"></div>
                     </div>
+                </section>
+
+                <section class="delivery-confirmation-banner hidden" id="deliveryConfirmationBanner" role="status" aria-live="polite">
+                    <div><strong>Delivery confirmation needed</strong><p id="deliveryConfirmationSummary">Please confirm whether your package arrived.</p></div>
+                    <button class="action-btn" id="reopenDeliveryConfirmation" type="button">Review delivery</button>
                 </section>
 
                 <!-- Order Details -->
@@ -155,8 +175,9 @@
                     </div>
                 </section>
 
-                <!-- Return/Exchange Section (shown only if status is Delivered) -->
+                <!-- Return/exchange actions are shown for items delivered within the eligibility window. -->
                 <section class="tracking-action-section hidden" id="returnExchangeSection">
+                    <p class="service-request-description">Requests are reviewed privately by the product owner. Submit a photo and an MP4 video up to 2 minutes long. Approved returns are collected by a delivery agent and routed through the destination warehouse to the seller.</p>
                     <div class="action-cards-grid">
                         <div class="action-card return-card">
                             <div class="action-card-header">
@@ -177,7 +198,48 @@
                             </button>
                         </div>
                     </div>
+                    <div id="serviceRequestStatus" class="service-request-status" aria-live="polite"></div>
                 </section>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-modal hidden" id="authModal" aria-hidden="true">
+        <div class="auth-card">
+            <button class="auth-close" id="authClose" type="button" aria-label="Close authentication dialog">×</button>
+            <div class="auth-brand">
+                <span>9Tails</span>
+                <p>Shop the latest collections with secure access.</p>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-mode="login" type="button">Login</button>
+                <button class="auth-tab" data-mode="register" type="button">Register</button>
+            </div>
+            <div class="auth-body">
+                <form id="authForm" class="auth-form">
+                    <div class="form-group auth-name-group hidden">
+                        <label for="authFullName">Full Name</label>
+                        <input type="text" id="authFullName" name="authFullName" placeholder="Enter your full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="auth-submit">Login</button>
+                </form>
+                <div class="auth-footer">
+                    <p class="auth-switch-text">Don’t have an account? <button type="button" class="switch-auth" data-mode="register">Register</button></p>
+                </div>
+                <div class="auth-divider"><span>OR</span></div>
+                <button class="google-btn" id="googleSignIn" type="button">Continue with Google</button>
+                <div class="google-selector hidden" id="googleSelector">
+                    <p>Select your Google account</p>
+                    <div class="google-account-list"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -196,6 +258,75 @@
         </div>
     </div>
 
+    <dialog class="delivery-confirmation-dialog" id="serviceRequestDialog" aria-labelledby="serviceRequestTitle">
+        <form class="delivery-confirmation-dialog-content" id="serviceRequestForm">
+            <header class="service-request-dialog-header">
+                <p class="delivery-confirmation-eyebrow">Private return/exchange request</p>
+                <h2 id="serviceRequestTitle">Request a return</h2>
+                <p class="service-request-dialog-description">
+                    Tell us what went wrong. Your request and evidence are shared privately with the product owner.
+                </p>
+            </header>
+            <div class="service-request-field">
+                <label for="serviceRequestItem">Product</label>
+                <select id="serviceRequestItem" required></select>
+            </div>
+            <div class="service-request-field">
+                <label for="serviceRequestReason">Reason</label>
+                <select id="serviceRequestReason" required>
+                    <option value="">Choose a reason</option>
+                    <option value="FIT_ISSUE">Fit issue</option>
+                    <option value="QUALITY_NOT_AS_EXPECTED">Quality did not meet expectations</option>
+                    <option value="WRONG_ITEM">Wrong item received</option>
+                    <option value="DAMAGED">Item arrived damaged</option>
+                    <option value="SIZE_OR_COLOR_CHANGE">Need a different size or color</option>
+                    <option value="OTHER">Other</option>
+                </select>
+            </div>
+            <div class="service-request-field">
+                <label for="serviceRequestDetails">Details for the product owner</label>
+                <textarea id="serviceRequestDetails" rows="3" maxlength="1000" required
+                          placeholder="Share a few details about your request"></textarea>
+            </div>
+            <div class="service-request-upload-grid">
+                <div class="service-request-field">
+                    <label for="serviceRequestPhoto">Product photo</label>
+                    <input id="serviceRequestPhoto" type="file"
+                           accept="image/jpeg,image/png,image/webp" required>
+                    <small>JPEG, PNG, or WebP · up to 5 MB</small>
+                    <div class="service-request-evidence-preview hidden" id="serviceRequestPhotoPreview"
+                         aria-label="Selected product photo preview"></div>
+                </div>
+                <div class="service-request-field">
+                    <label for="serviceRequestVideo">Product video</label>
+                    <input id="serviceRequestVideo" type="file" accept="video/mp4" required>
+                    <small>MP4 · up to 2 minutes and 100 MB</small>
+                    <div class="service-request-evidence-preview hidden" id="serviceRequestVideoPreview"
+                         aria-label="Selected product video preview"></div>
+                </div>
+            </div>
+            <div class="delivery-confirmation-actions service-request-dialog-actions">
+                <button class="action-btn confirmation-no" id="cancelServiceRequest" type="button">Cancel</button>
+                <button class="action-btn confirmation-yes" id="submitServiceRequest" type="submit">Send to owner</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="delivery-confirmation-dialog" id="deliveryConfirmationDialog" aria-labelledby="deliveryConfirmationTitle">
+        <form method="dialog" class="delivery-confirmation-dialog-content">
+            <p class="delivery-confirmation-eyebrow">Delivery check</p>
+            <h2 id="deliveryConfirmationTitle">Has your order been delivered successfully?</h2>
+            <p>Your order will remain unconfirmed until you respond. If you have not received it, tell us and the delivery team will follow up.</p>
+            <label for="deliveryConfirmationNote">Optional note</label>
+            <textarea id="deliveryConfirmationNote" rows="3" maxlength="1000"></textarea>
+            <div class="delivery-confirmation-actions">
+                <button class="action-btn confirmation-no" id="deliveryNotReceived" type="button">No, Not Received</button>
+                <button class="action-btn confirmation-yes" id="deliveryReceived" type="button">Yes, Delivered</button>
+            </div>
+            <button class="confirmation-close" id="closeDeliveryConfirmation" type="submit">Decide later</button>
+        </form>
+    </dialog>
+
     <script>
         /* ── Nav scroll reveal ── */
         (function () {
@@ -210,6 +341,7 @@
     </script>
     <script src="api.js"></script>
     <script src="auth.js"></script>
+    <script src="notifications.js"></script>
     <script src="OrderTracking.js"></script>
     <footer class="site-footer">
         <div class="footer-brand">
@@ -232,7 +364,6 @@
         </div>
         <div class="footer-bottom">
             <span>© 2026 9Tails. All rights reserved.</span>
-            <span>Made with ♥ in Bangalore</span>
         </div>
     </footer>
 </body>

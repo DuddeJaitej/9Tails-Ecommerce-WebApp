@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#172124">
+    <title>Delivery Workspace | 9Tails</title>
+    <link rel="icon" type="image/svg+xml" href="../Assets/9tails-logo.svg">
+    <link rel="stylesheet" href="Operations.css">
+    <link rel="stylesheet" href="Delivery.css">
+    <script>window.TAP_API_TOKEN_KEY = 'tap_delivery_jwt'; window.TAP_API_ROLE_SCOPED_TOKENS = true;</script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
+    <script src="maps.js" defer></script>
+    <script src="api.js" defer></script>
+    <script src="Delivery.js" defer></script>
+</head>
+<body>
+    <div>
+        <section class="login-shell" id="deliveryLogin">
+            <a class="brand" href="Home.html"><span>9</span>Tails</a>
+            <p class="eyebrow">Delivery operations</p>
+            <h1>Delivery workspace</h1>
+            <p class="muted">Sign in with your delivery-agent or warehouse-operator account.</p>
+            <form id="deliveryLoginForm" class="stack-form">
+                <label for="deliveryEmail">Work email</label>
+                <input id="deliveryEmail" type="email" autocomplete="username" required>
+                <label for="deliveryPassword">Password</label>
+                <input id="deliveryPassword" type="password" autocomplete="current-password" required>
+                <button class="button button-primary" id="deliveryLoginButton" type="submit">Sign in</button>
+                <p class="feedback" id="deliveryLoginFeedback" role="alert"></p>
+            </form>
+            <div class="delivery-auth-switch">
+                <span>New to delivery operations?</span>
+                <a href="DeliveryRegister.html">Choose a staff account type <small>Agent or warehouse operator</small></a>
+            </div>
+        </section>
+
+        <div class="delivery-app hidden" id="deliveryApp">
+            <header class="delivery-header">
+                <a class="brand" href="Home.html"><span>9</span>Tails</a>
+                <div class="delivery-identity">
+                    <strong id="deliveryUserName">Delivery staff</strong>
+                    <span id="deliveryUserRole"></span>
+                </div>
+                <div class="delivery-notification-menu">
+                    <button class="delivery-notification-toggle" id="deliveryNotificationToggle" type="button"
+                            aria-label="Notifications" aria-expanded="false" aria-controls="deliveryNotificationPopover">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+                        </svg>
+                        <span class="delivery-notification-badge hidden" id="deliveryNotificationBadge" aria-live="polite"></span>
+                    </button>
+                    <section class="delivery-notification-popover hidden" id="deliveryNotificationPopover"
+                             aria-label="Recent notifications">
+                        <div class="delivery-notification-popover-heading">
+                            <div><p class="eyebrow">Updates</p><h2>Notifications</h2></div>
+                            <button class="delivery-notification-close" id="deliveryNotificationClose" type="button"
+                                    aria-label="Close notifications">×</button>
+                        </div>
+                        <div class="notification-list" id="deliveryNotifications" aria-live="polite">
+                            <p class="muted">Loading notifications…</p>
+                        </div>
+                    </section>
+                </div>
+                <button class="button button-light" id="deliveryLogout" type="button">Sign out</button>
+            </header>
+
+            <main class="delivery-main">
+                <section class="delivery-panel hidden" id="deliveryApprovalPending" role="status">
+                    <p class="eyebrow" id="deliveryApprovalEyebrow">Warehouse approval</p>
+                    <h2 id="deliveryApprovalTitle">Account awaiting activation</h2>
+                    <p class="muted" id="deliveryApprovalMessage"></p>
+                </section>
+                <header class="delivery-page-heading">
+                    <div>
+                        <p class="eyebrow">Assigned workflow</p>
+                        <h1 id="deliveryWorkspaceTitle">Delivery agent workspace</h1>
+                        <p class="muted">Scan the package's original QR. Only the next valid stage for that order can be submitted.</p>
+                    </div>
+                </header>
+
+                <p class="alert hidden" id="deliveryFeedback" role="status" aria-live="polite"></p>
+                <aside class="delivery-history-toast hidden" id="deliveryHistoryToast"
+                       role="status" aria-live="polite" aria-label="Order workflow history">
+                    <div class="delivery-history-toast-heading">
+                        <strong id="deliveryHistoryToastTitle">Order history</strong>
+                        <button class="delivery-history-toast-close" id="deliveryHistoryToastClose"
+                                type="button" aria-label="Close order history">×</button>
+                    </div>
+                    <ol class="delivery-history-toast-list" id="deliveryHistoryToastList"></ol>
+                </aside>
+
+                <section class="delivery-panel" id="deliveryTasksPanel">
+                    <div class="delivery-section-heading">
+                        <div><p class="eyebrow">Your queue</p><h2 id="deliveryQueueTitle">Assigned orders</h2></div>
+                        <span class="status-pill" id="deliveryTaskCount">0 tasks</span>
+                    </div>
+                    <div class="delivery-task-list" id="deliveryTaskList">
+                        <p class="muted">Loading delivery tasks…</p>
+                    </div>
+                </section>
+
+                <section class="delivery-panel hidden" id="warehouseAgentPanel">
+                    <div class="delivery-section-heading">
+                        <div><p class="eyebrow">Warehouse staff</p><h2>Delivery agent approvals</h2></div>
+                    </div>
+                    <div class="delivery-task-list" id="warehouseAgentList"></div>
+                </section>
+
+                <section class="delivery-panel hidden" id="warehouseArrivalQrPanel">
+                    <div class="delivery-section-heading">
+                        <div><p class="eyebrow">Warehouse check-in</p><h2 id="warehouseArrivalQrName">Arrival QR</h2></div>
+                    </div>
+                    <p class="muted" id="warehouseArrivalQrAddress"></p>
+                    <canvas id="warehouseArrivalQrCanvas" width="220" height="220"
+                            aria-label="Warehouse arrival QR code"></canvas>
+                    <a class="button button-light warehouse-qr-download" id="warehouseArrivalQrDownload"
+                       download="warehouse-arrival-qr.png">Download QR for printing</a>
+                    <p class="muted">Display this QR at the warehouse entrance. Delivery agents scan it to confirm arrival for an assigned order.</p>
+                </section>
+
+                <section class="delivery-panel" id="deliveryScanner">
+                    <div class="delivery-section-heading">
+                        <div><p class="eyebrow">Mobile scanner</p><h2 id="deliveryScannerTitle">Scan package QR</h2></div>
+                    </div>
+                    <div class="scanner-controls">
+                        <button class="button button-primary" id="deliveryStartScanner" type="button">Open camera</button>
+                        <button class="button button-light" id="deliveryStopScanner" type="button" disabled>Stop camera</button>
+                        <button class="button button-light" id="deliveryRetryScanner" type="button" hidden>Retry camera</button>
+                    </div>
+                    <p class="muted" id="deliveryScannerMessage" role="status" aria-live="polite">Scan the package QR only for the next stage shown in your assigned task.</p>
+                    <video id="deliveryScannerVideo" class="scanner-video hidden" playsinline muted></video>
+                    <form id="deliveryManualScanForm" class="manual-scan">
+                        <label for="deliveryManualToken">Manual token entry</label>
+                        <div><input id="deliveryManualToken" autocomplete="off" maxlength="128" required><button class="button button-dark" type="submit">Validate token</button></div>
+                    </form>
+                    <div class="scan-result hidden" id="deliveryScanResult"></div>
+                    <form class="stage-form hidden" id="deliveryStageForm">
+                        <div id="deliveryStageFields"></div>
+                        <button class="button button-primary" id="deliveryStageSubmit" type="submit">Submit stage</button>
+                    </form>
+                </section>
+
+            </main>
+        </div>
+    </div>
+</body>
+</html>

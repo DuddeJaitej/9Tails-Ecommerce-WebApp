@@ -55,6 +55,8 @@
                     id:           dto.id,
                     name:         dto.name,
                     description:  dto.description || '',
+                    specifications: dto.specifications || '',
+                    returnPolicy: dto.returnPolicy || '',
                     category:     dto.categoryName,
                     img:          imgFix(dto.imageUrl),
                     // gallery: API returns string array
@@ -63,7 +65,7 @@
                                     : (dto.galleryImages || '').split(',').filter(Boolean).map(imgFix),
                     price:        Number(dto.price),
                     originalPrice: dto.originalPrice ? Number(dto.originalPrice) : null,
-                    rating:       dto.rating || 4.0,
+                    rating:       Number(dto.rating) || 0,
                     reviews:      dto.reviewCount || 0,
                     inStock:      dto.inStock,
                     stock:        dto.stock
@@ -75,7 +77,9 @@
                     window._relatedProducts = (relDtos || []).map(p => ({
                         key:      String(p.id), id: p.id, name: p.name,
                         category: p.categoryName, img: imgFix(p.imageUrl),
-                        price:    Number(p.price), rating: p.rating || 4.0,
+                        price:    Number(p.price),
+                        originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
+                        rating:   Number(p.rating) || 0,
                         reviews:  p.reviewCount || 0, inStock: p.inStock
                     }));
                 } catch (e) {
@@ -111,13 +115,47 @@
     qs('#pdCategory').textContent    = product.category;
     qs('#pdTitle').textContent       = product.name;
     qs('#pdPrice').textContent       = formatPrice(product.price);
+    const originalPriceEl = qs('#pdOriginalPrice');
+    const discountBadgeEl = qs('#pdDiscountBadge');
+    const originalPrice = Number(product.originalPrice);
+    const discountPercent = String(product.category || '').trim().toLowerCase() === 'fashion'
+        && originalPrice > product.price
+        ? Math.round((originalPrice - product.price) / originalPrice * 100)
+        : 0;
+    originalPriceEl.hidden = !discountPercent;
+    discountBadgeEl.hidden = !discountPercent;
+    if (discountPercent) {
+        originalPriceEl.textContent = formatPrice(originalPrice);
+        discountBadgeEl.textContent = `${discountPercent}% OFF`;
+    }
     qs('#pdDescription').textContent = product.description || 'No description available.';
+    const specificationsEl = qs('#pdSpecifications');
+    const specifications = product.specifications?.trim();
+    specificationsEl.replaceChildren();
+    if (specifications) {
+        specifications.split(/\r?\n/).forEach((line, index) => {
+            if (index > 0) specificationsEl.append(document.createElement('br'));
+            const separatorIndex = line.indexOf(':');
+            if (separatorIndex > 0) {
+                const label = document.createElement('strong');
+                label.textContent = line.slice(0, separatorIndex + 1);
+                specificationsEl.append(label, document.createTextNode(line.slice(separatorIndex + 1)));
+            } else {
+                specificationsEl.append(document.createTextNode(line));
+            }
+        });
+    } else {
+        specificationsEl.textContent = 'Specifications have not been added yet.';
+    }
+    qs('#pdReturnPolicy').textContent = product.returnPolicy?.trim() || 'No return or exchange policy provided.';
 
-    const ratingVal  = product.rating  || 4.0;
+    const ratingVal  = Number(product.rating) || 0;
     const reviewsVal = product.reviews || 0;
     qs('#pdStars').innerHTML        = renderStars(ratingVal);
-    qs('#pdRatingScore').textContent = ratingVal.toFixed(1);
-    qs('#pdReviews').textContent     = `(${reviewsVal.toLocaleString()} reviews)`;
+    qs('#pdRatingScore').textContent = reviewsVal ? ratingVal.toFixed(1) : '—';
+    qs('#pdReviews').textContent     = reviewsVal
+        ? `(${reviewsVal.toLocaleString()} reviews)`
+        : '(No ratings yet)';
 
     const stockEl = qs('#pdStock');
     if (product.inStock) {
@@ -285,8 +323,10 @@
 
     function updateWishlistBtn() {
         wishlistBtn.classList.toggle('active', isWishlisted);
-        wishlistBtn.textContent = isWishlisted ? '♥ Wishlisted' : '♥ Wishlist';
-        wishlistBtn.setAttribute('aria-label', isWishlisted ? 'Remove from wishlist' : 'Add to wishlist');
+        wishlistBtn.textContent = isWishlisted ? '♥' : '♡';
+        const label = isWishlisted ? 'Remove from wishlist' : 'Add to wishlist';
+        wishlistBtn.setAttribute('aria-label', label);
+        wishlistBtn.title = label;
         wishlistBtn.setAttribute('aria-pressed', String(isWishlisted));
     }
     updateWishlistBtn();
@@ -350,10 +390,22 @@
 
     // ── Related products loaded from the API ─────────────────────────────────
     const relatedGrid = qs('#pdRelatedGrid');
-    const related = (window._relatedProducts || []).slice(0, 4);
+    const relatedCandidates = [...(window._relatedProducts || [])];
+    for (let index = relatedCandidates.length - 1; index > 0; index--) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [relatedCandidates[index], relatedCandidates[randomIndex]] =
+            [relatedCandidates[randomIndex], relatedCandidates[index]];
+    }
+    const related = relatedCandidates.slice(0, 4);
 
     if (related.length) {
-        relatedGrid.innerHTML = related.map(p => `
+        relatedGrid.innerHTML = related.map(p => {
+            const originalPrice = Number(p.originalPrice);
+            const discountPercent = String(p.category || '').trim().toLowerCase() === 'fashion'
+                && originalPrice > p.price
+                ? Math.round((originalPrice - p.price) / originalPrice * 100)
+                : 0;
+            return `
             <article class="product-card related-product-card">
                 <div class="product-image-wrap product-image-clickable"
                      data-key="${p.key}"
@@ -367,11 +419,21 @@
                         <p class="product-category">${p.category}</p>
                         <h3>${p.name}</h3>
                     </div>
-                    <strong>${formatPrice(p.price)}</strong>
+                    <div class="product-price-block">
+                        <div class="product-price-current-row">
+                            <strong>${formatPrice(p.price)}</strong>
+                            ${discountPercent
+                                ? `<span class="product-discount-badge">${discountPercent}% OFF</span>`
+                                : ''}
+                        </div>
+                        ${discountPercent
+                            ? `<del class="product-original-price">${formatPrice(originalPrice)}</del>`
+                            : ''}
+                    </div>
                 </div>
                 <div class="product-rating" aria-label="Rating: ${p.rating} out of 5">
-                    <span class="stars">${renderStars(p.rating || 4)}</span>
-                    <span class="rating-score">${(p.rating || 4).toFixed(1)}</span>
+                    <span class="stars">${renderStars(Number(p.rating) || 0)}</span>
+                    <span class="rating-score">${p.reviews ? Number(p.rating).toFixed(1) : '—'}</span>
                     <span class="rating-reviews">(${(p.reviews || 0).toLocaleString()})</span>
                 </div>
                 <div class="product-meta">
@@ -379,7 +441,8 @@
                     <button class="add-cart-btn related-cart-btn" data-key="${p.key}" type="button" ${!p.inStock ? 'disabled' : ''}>Add to cart</button>
                 </div>
             </article>
-        `).join('');
+            `;
+        }).join('');
 
         // Navigate to product detail — use numeric id if available
         relatedGrid.querySelectorAll('.product-image-clickable, .product-info-text').forEach(el => {

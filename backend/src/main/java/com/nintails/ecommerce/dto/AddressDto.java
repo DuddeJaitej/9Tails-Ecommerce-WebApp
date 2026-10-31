@@ -25,5 +25,8 @@ public class AddressDto {
     @NotBlank(message = "Country is required")
     private String country;
 
+    private Double latitude;
+    private Double longitude;
+
     private Boolean isDefault;
 }

@@ -1,8 +1,10 @@
 package com.nintails.ecommerce.repository;
 
 import com.nintails.ecommerce.entity.Product;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -36,4 +38,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findTop8ByCategoryNameIgnoreCaseAndActiveTrueAndIdNot(
             String categoryName, Long excludeId);
+
+    Page<Product> findByOwnerIdAndActiveTrue(Long ownerId, Pageable pageable);
+
+    boolean existsByBusinessLocation_Id(Long businessLocationId);
+
+    long countByActiveTrue();
+
+    long countByActiveTrueAndStockLessThanEqual(Integer stock);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Product p WHERE p.id = :id")
+    Optional<Product> findByIdForUpdate(@Param("id") Long id);
 }

@@ -41,11 +41,26 @@
                             <div class="profile-menu hidden" role="menu" aria-label="User menu">
                                 <div class="profile-menu-card">
                                     <p class="profile-menu-email"></p>
+                                    <a class="admin-dashboard-link hidden" href="Admin.html">Admin Dashboard</a>
+                                    <a class="operations-dashboard-link hidden" href="Operations.html">Operations Dashboard</a>
                                     <button class="logout-btn" type="button">Logout</button>
                                 </div>
                             </div>
                         </li>
                     </ul>
+                </div>
+                <div class="notification-nav hidden" id="customerNotificationNav">
+                    <button class="notification-bell" id="customerNotificationBell" type="button" aria-label="Notifications" aria-expanded="false">
+                        <svg class="notification-bell-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" focusable="false">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                            <path d="M10 21h4" />
+                        </svg>
+                        <span class="notification-count hidden" id="customerNotificationCount">0</span>
+                    </button>
+                    <div class="notification-menu hidden" id="customerNotificationMenu" aria-label="Notifications">
+                        <div class="notification-menu-heading"><strong>Notifications</strong><button class="notification-mark-all" id="customerNotificationMarkAll" type="button">Mark all read</button></div>
+                        <div class="notification-menu-list" id="customerNotificationList"></div>
+                    </div>
                 </div>
             </nav>
         </div>
@@ -98,9 +113,9 @@
                         <img src="../Assets/Products/Footwear/footwear1.avif" alt="Footwear" />
                         <div class="cat-card-label">Footwear</div>
                     </button>
-                    <button class="cat-card" data-category="Audio & Electronics" aria-label="Browse Audio &amp; Electronics">
-                        <img src="../Assets/Products/Audio & Electronics/audio3.webp" alt="Electronics" />
-                        <div class="cat-card-label">Electronics</div>
+                    <button class="cat-card" data-category="Audio & Electronics" aria-label="Browse Audio and Electronics">
+                        <img src="../Assets/Products/Audio & Electronics/audio3.webp" alt="Audio and electronics" />
+                        <div class="cat-card-label">Audio / Electronics</div>
                     </button>
                     <button class="cat-card" data-category="Beauty & Fragrance" aria-label="Browse Beauty">
                         <img src="../Assets/Products/Beauty & Fragrance/fregrance4.webp" alt="Beauty" />
@@ -151,59 +166,19 @@
             </div>
         </section>
 
-        <!-- Testimonials Section -->
-        <section class="testimonials-section" aria-labelledby="testimonialsHeading">
-            <div class="testimonials-inner">
+        <section class="top-rated-section" aria-labelledby="topRatedHeading">
+            <div class="top-rated-inner">
                 <div class="section-header-centered">
-                    <span class="section-eyebrow">What Customers Say</span>
-                    <h2 id="testimonialsHeading">Loved by Thousands</h2>
+                    <h2 id="topRatedHeading">Customer Reviews</h2>
                 </div>
-                <div class="testimonials-grid">
-                    <blockquote class="testimonial-card">
-                        <div class="testimonial-stars" aria-label="5 stars">★★★★★</div>
-                        <p>"The jewelry quality exceeded my expectations. The pearl pendant looks even more beautiful in person — and the packaging was stunning."</p>
-                        <footer>
-                            <div class="testimonial-avatar">P</div>
-                            <cite>
-                                <strong>Priya S.</strong>
-                                <span>Mumbai</span>
-                            </cite>
-                        </footer>
-                    </blockquote>
-                    <blockquote class="testimonial-card">
-                        <div class="testimonial-stars" aria-label="5 stars">★★★★★</div>
-                        <p>"Fast delivery and the cashmere sweater is incredibly soft. This is my third order from 9Tails and it never disappoints. Highly recommend!"</p>
-                        <footer>
-                            <div class="testimonial-avatar">R</div>
-                            <cite>
-                                <strong>Rahul M.</strong>
-                                <span>Bangalore</span>
-                            </cite>
-                        </footer>
-                    </blockquote>
-                    <blockquote class="testimonial-card">
-                        <div class="testimonial-stars" aria-label="5 stars">★★★★★</div>
-                        <p>"Got the noise-cancelling headphones as a gift for my husband. He hasn't taken them off! Great sound quality and the build feels premium."</p>
-                        <footer>
-                            <div class="testimonial-avatar">A</div>
-                            <cite>
-                                <strong>Ananya K.</strong>
-                                <span>Hyderabad</span>
-                            </cite>
-                        </footer>
-                    </blockquote>
-                    <blockquote class="testimonial-card">
-                        <div class="testimonial-stars" aria-label="4 stars">★★★★☆</div>
-                        <p>"Ordered the structured tote and it's exactly as described — roomy, sturdy, and stylish. Ships quickly and customer support was very responsive."</p>
-                        <footer>
-                            <div class="testimonial-avatar">D</div>
-                            <cite>
-                                <strong>Divya T.</strong>
-                                <span>Chennai</span>
-                            </cite>
-                        </footer>
-                    </blockquote>
+                <div class="top-rated-toolbar">
+                    <p class="top-rated-message" id="topRatedMessage" role="status">Loading product ratings…</p>
+                    <div class="top-rated-controls">
+                        <button class="top-rated-arrow" id="topRatedPrevious" type="button" aria-label="Scroll to previous products">‹</button>
+                        <button class="top-rated-arrow" id="topRatedNext" type="button" aria-label="Scroll to more products">›</button>
+                    </div>
                 </div>
+                <div class="top-rated-track" id="topRatedTrack" aria-label="Top rated products"></div>
             </div>
         </section>
 
@@ -245,24 +220,41 @@
                         <span>Shop by category</span>
                         <h2>Featured Collections</h2>
                     </div>
-                    <div class="tab-list" role="tablist">
-                        <button class="tab-button active" data-category="All">All</button>
-                        <button class="tab-button" data-category="Audio & Electronics">Audio</button>
-                        <button class="tab-button" data-category="Bags">Bags</button>
-                        <button class="tab-button" data-category="Beauty & Fragrance">Beauty</button>
-                        <button class="tab-button" data-category="Books">Books</button>
-                        <button class="tab-button" data-category="Fashion">Fashion</button>
-                        <button class="tab-button" data-category="Footwear">Footwear</button>
-                        <button class="tab-button" data-category="Gadgets">Gadgets</button>
-                        <button class="tab-button" data-category="Jewelry">Jewelry</button>
-                        <button class="tab-button" data-category="Watches">Watches</button>
+                </div>
+
+                <div class="catalog-toolbar">
+                    <div class="catalog-search">
+                        <label class="sr-only" for="productSearch">Search products</label>
+                        <span class="catalog-search-icon" aria-hidden="true">⌕</span>
+                        <input id="productSearch" type="search" placeholder="Search products by name, price, or rating…" autocomplete="off" aria-controls="searchSuggestions" aria-expanded="false" />
+                        <button class="search-clear hidden" id="searchClear" type="button" aria-label="Clear search">×</button>
+                        <div class="search-suggestions hidden" id="searchSuggestions" role="listbox" aria-label="Product suggestions"></div>
                     </div>
+                    <button class="filters-toggle" id="filtersToggle" type="button" aria-expanded="false" aria-controls="catalogFilters">
+                        <span aria-hidden="true">☷</span> Filter by <span class="filter-count hidden" id="filterCount">0</span>
+                    </button>
+                </div>
+
+                <div class="tab-list" role="tablist" aria-label="Filter products by category">
+                    <button class="tab-button active" data-category="All">All</button>
+                    <button class="tab-button" data-category="Audio & Electronics">Audio / Electronics</button>
+                    <button class="tab-button" data-category="Bags">Bags</button>
+                    <button class="tab-button" data-category="Beauty & Fragrance">Beauty</button>
+                    <button class="tab-button" data-category="Books">Books</button>
+                    <button class="tab-button" data-category="Fashion">Fashion</button>
+                    <button class="tab-button" data-category="Footwear">Footwear</button>
+                    <button class="tab-button" data-category="Gadgets">Gadgets</button>
+                    <button class="tab-button" data-category="Jewelry">Jewelry</button>
+                    <button class="tab-button" data-category="Watches">Watches</button>
                 </div>
 
                 <div class="products-grid-layout">
-                    <aside class="filters-panel">
+                    <aside class="filters-panel hidden" id="catalogFilters" aria-label="Product filters">
                         <div class="filter-card">
-                            <h3>Filter by</h3>
+                            <div class="filter-card-heading">
+                                <h3>Refine your search</h3>
+                                <button class="filter-reset" id="filterReset" type="button">Reset all</button>
+                            </div>
                             <div class="filter-group">
                                 <p>Price</p>
                                 <label><input type="radio" name="price" value="all" checked> All</label>
@@ -277,6 +269,25 @@
                             </div>
                         </div>
                         <div class="filter-card">
+                            <div class="filter-group">
+                                <p>Custom price range</p>
+                                <div class="price-range-inputs">
+                                    <label><span>Min ₹</span><input id="minPrice" type="number" min="0" inputmode="decimal" placeholder="0"></label>
+                                    <label><span>Max ₹</span><input id="maxPrice" type="number" min="0" inputmode="decimal" placeholder="Any"></label>
+                                </div>
+                            </div>
+                            <div class="filter-group rating-filter">
+                                <label for="minRating">Minimum rating</label>
+                                <select id="minRating" class="rating-select">
+                                    <option value="0">Any rating</option>
+                                    <option value="4">★★★★ 4+ stars</option>
+                                    <option value="3">★★★ 3+ stars</option>
+                                    <option value="2">★★ 2+ stars</option>
+                                    <option value="1">★ 1+ star</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-card sort-filter-card">
                             <h3>Sort by</h3>
                             <select class="sort-select">
                                 <option value="popular">Most Popular</option>
@@ -286,7 +297,10 @@
                         </div>
                     </aside>
 
-                    <div class="products-grid" id="productsGrid"></div>
+                    <div class="catalog-results">
+                        <p class="catalog-result-count" id="catalogResultCount" aria-live="polite"></p>
+                        <div class="products-grid" id="productsGrid"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -322,8 +336,26 @@
                 <div class="auth-footer">
                     <p class="auth-switch-text">Don’t have an account? <button type="button" class="switch-auth" data-mode="register">Register</button></p>
                 </div>
+                <button type="button" class="customer-forgot-link" id="customerForgotLink">Forgot password?</button>
                 <div class="auth-divider"><span>OR</span></div>
                 <button class="google-btn" id="googleSignIn" type="button">Continue with Google</button>
+                <form id="customerForgotForm" class="customer-password-form hidden">
+                    <p>Enter your account email. If it belongs to a customer account, we’ll send a one-time reset link.</p>
+                    <label for="customerForgotEmail">Email</label>
+                    <input id="customerForgotEmail" type="email" autocomplete="email" maxlength="254" required>
+                    <button class="auth-submit" id="customerForgotSubmit" type="submit">Send reset link</button>
+                    <button class="customer-form-back" id="customerForgotBack" type="button">Back to login</button>
+                </form>
+                <form id="customerResetForm" class="customer-password-form hidden">
+                    <p>Choose a new password. Reset links expire after 30 minutes and can only be used once.</p>
+                    <input id="customerResetToken" type="hidden">
+                    <label for="customerNewPassword">New password</label>
+                    <input id="customerNewPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                    <label for="customerConfirmPassword">Confirm new password</label>
+                    <input id="customerConfirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+                    <button class="auth-submit" id="customerResetSubmit" type="submit">Reset password</button>
+                </form>
+                <p class="customer-password-feedback hidden" id="customerPasswordFeedback" role="status"></p>
                 <div class="google-selector hidden" id="googleSelector">
                     <p>Select your Google account</p>
                     <div class="google-account-list"></div>
@@ -396,7 +428,6 @@
         </div>
         <div class="footer-bottom">
             <span>© 2026 9Tails. All rights reserved.</span>
-            <span>Made with ♥ in Bangalore</span>
         </div>
     </footer>
 
@@ -414,6 +445,7 @@
     </script>
     <script src="api.js"></script>
     <script src="auth.js"></script>
+    <script src="notifications.js"></script>
     <script src="Home.js"></script>
     <script>
         const navToggle = document.getElementById('navToggle');

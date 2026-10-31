@@ -44,12 +44,20 @@ public class Order {
     @Builder.Default
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
+    @Column(unique = true, length = 64)
+    private String razorpayOrderId;
+
+    @Column(unique = true, length = 64)
+    private String razorpayPaymentId;
+
     // snapshot of address at order time
     private String addressFullName;
     private String addressStreet;
     private String addressCity;
     private String addressPostalCode;
     private String addressCountry;
+    private Double addressLatitude;
+    private Double addressLongitude;
 
     private LocalDateTime expectedDeliveryDate;
 
@@ -66,6 +74,10 @@ public class Order {
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<SellerFulfillment> fulfillments = new ArrayList<>();
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime placedAt;
@@ -74,7 +86,9 @@ public class Order {
     private LocalDateTime updatedAt;
 
     public enum OrderStatus {
-        PENDING, CONFIRMED, PACKED, SHIPPED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED
+        PENDING, CONFIRMED, PICKED_UP_FROM_OWNER, PACKED_READY, PACKED, SHIPPED,
+        IN_TRANSIT_TO_STORE, AT_DESTINATION_STORE, OUT_FOR_DELIVERY,
+        DELIVERY_CONFIRMATION_PENDING, DELIVERED, CANCELLED
     }
 
     public enum PaymentMethod {
@@ -82,6 +96,6 @@ public class Order {
     }
 
     public enum PaymentStatus {
-        PENDING, PAID, FAILED, REFUNDED
+        PENDING, PAID, FAILED, REFUND_PENDING, PARTIALLY_REFUNDED, REFUNDED
     }
 }

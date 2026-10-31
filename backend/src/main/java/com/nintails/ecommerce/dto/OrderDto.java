@@ -28,7 +28,9 @@ public class OrderDto {
     private LocalDateTime expectedDeliveryDate;
     private boolean returnRequested;
     private boolean exchangeRequested;
+    private List<ServiceRequestDto> serviceRequests;
     private List<OrderItemDto> items;
+    private List<FulfillmentDto> fulfillments;
     private LocalDateTime placedAt;
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
@@ -42,5 +44,9 @@ public class OrderDto {
         private Integer quantity;
         private BigDecimal lineTotal;
         private boolean cancelled;
+        private String fulfillmentStatus;
+        private LocalDateTime deliveredAt;
+        private Integer rating;
+        private String reviewText;
     }
 }

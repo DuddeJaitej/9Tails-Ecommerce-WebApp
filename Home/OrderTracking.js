@@ -65,6 +65,18 @@
     /* ── Helpers ── */
     const fmt = function(v) { return '₹' + Number(v || 0).toFixed(2); };
 
+    function escapeOrderText(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[character];
+        });
+    }
+
     // Normalize image path — strip leading ../ for Python root server
     function imgPath(p) {
         if (!p) return '';
@@ -104,8 +116,10 @@
 
     var order = null;
     var orders = [];
+    var trackingPoll = null;
+    var activeConfirmationId = null;
 
-    async function loadOrder() {
+    async function loadOrder(silent) {
         var isLoggedIn = window.tapAuth && window.tapAuth.isLoggedIn();
 
         if (isLoggedIn && window.tapApi) {
@@ -118,15 +132,22 @@
                     return;
                 }
             } catch (e) {
-                // Fall through to localStorage
+                if (!silent) showToast('error', 'Order could not be loaded', e.message || 'Please try again.');
+                else console.warn('Order tracking refresh failed:', e.message);
+                return;
             }
         }
 
-        showToast('error', isLoggedIn ? 'Order not found' : 'Login required', 'Run Spring Boot and sign in to view this order.');
+        if (!silent) showToast('error', isLoggedIn ? 'Order not found' : 'Login required',
+            'Sign in and ensure the order service is available.');
     }
 
     /* Convert Spring Boot API order shape → legacy shape used in this file */
     function normaliseApiOrder(o) {
+        var fulfillments = o.fulfillments || [];
+        var earliestExpectedDate = fulfillments.map(function(item) {
+            return item.expectedDeliveryDate;
+        }).filter(Boolean).sort()[0];
         return {
             id:            o.orderNumber || String(o.id),
             status:        titleCaseStatus(o.status),
@@ -135,6 +156,10 @@
             delivery:      Number(o.deliveryCharge),
             total:         Number(o.total),
             paymentMethod: (o.paymentMethod || 'COD').toLowerCase(),
+            expectedDeliveryDate: o.expectedDeliveryDate || earliestExpectedDate,
+            fulfillments: fulfillments,
+            serviceRequests: o.serviceRequests || [],
+            rawStatus: o.status,
             returnRequested:  o.returnRequested,
             exchangeRequested:o.exchangeRequested,
             address: {
@@ -146,12 +171,15 @@
             },
             items: (o.items || []).map(function(i) {
                 return {
+                    id:       i.id,
                     name:     i.productName,
                     img:      i.productImageUrl,
                     category: i.categoryName,
                     price:    Number(i.unitPrice),
                     qty:      i.quantity,
-                    cancelled: i.cancelled
+                    cancelled: i.cancelled,
+                    fulfillmentStatus: i.fulfillmentStatus,
+                    deliveredAt: i.deliveredAt
                 };
             }),
             _apiId: o.id   // keep numeric ID for API calls
@@ -161,11 +189,18 @@
     function titleCaseStatus(s) {
         var map = {
             'PENDING':          'Pending',
+            'AWAITING_OWNER_CONFIRMATION': 'Awaiting seller confirmation',
             'CONFIRMED':        'Confirmed',
+            'PICKED_UP_FROM_OWNER': 'Picked Up from Owner',
+            'PACKED_READY':     'Packed & Ready',
             'PACKED':           'Packed & Ready',
             'SHIPPED':          'Shipped',
+            'IN_TRANSIT_TO_STORE': 'Moving to destination warehouse',
+            'AT_DESTINATION_STORE': 'At destination warehouse',
             'OUT_FOR_DELIVERY': 'Out for Delivery',
+            'DELIVERY_CONFIRMATION_PENDING': 'Delivery Confirmation Pending',
             'DELIVERED':        'Delivered',
+            'REJECTED':         'Rejected',
             'CANCELLED':        'Cancelled'
         };
         return map[s] || s;
@@ -180,17 +215,17 @@
     /* ── renderPage: called after order is loaded ── */
     function renderPage() {
         /* Status & dates */
-        var currentStatus = order.status || 'Pending';
-        var currentStep   = (STATUS_INDEX[currentStatus] !== undefined) ? STATUS_INDEX[currentStatus] : 0;
-        var placedMs      = new Date(order.placedAt).getTime();
-        if (isNaN(placedMs)) placedMs = Date.now();
-        var deliveryDate  = new Date(placedMs + 5 * 24 * 60 * 60 * 1000);
+        var fulfillments = order.fulfillments || [];
+        var currentStatus = fulfillments.length === 1
+            ? titleCaseStatus(fulfillments[0].status)
+            : (order.status || 'Pending');
+        var deliveryDate = order.expectedDeliveryDate;
 
         /* Header */
         setEl('breadcrumbOrderId', 'Order #' + order.id);
         setEl('orderIdDisplay',    '#' + order.id);
         setEl('orderPlacedDate',   fmtDateTime(order.placedAt));
-        setEl('orderExpectedDate', fmtDate(deliveryDate));
+        setEl('orderExpectedDate', deliveryDate ? fmtDate(deliveryDate) : 'Pending seller confirmation');
 
         var badge = document.getElementById('orderStatusBadge');
         if (badge) {
@@ -199,13 +234,15 @@
         }
 
         /* Timeline */
-        buildTimeline(currentStatus, currentStep, deliveryDate);
+        buildTimeline(currentStatus, deliveryDate);
+        renderDeliveryConfirmation();
 
         /* Details */
         populateOrderDetails();
 
         /* Action sections */
         setupActionSections(currentStatus);
+        renderServiceRequestStatus();
 
         /* Delivery banner */
         var bannerTitle = document.querySelector('.delivery-banner-title');
@@ -214,9 +251,13 @@
             'Pending':          { title: 'Order received!',             sub: 'Your order is confirmed and being processed.' },
             'Confirmed':        { title: 'Order confirmed!',            sub: 'We\'re getting your items ready to ship.' },
             'Order placed':     { title: 'Order placed!',               sub: 'Your order is confirmed and being processed.' },
+            'Picked Up from Owner': { title: 'Picked up from the seller', sub: 'The package has been collected from the seller.' },
             'Packed & Ready':   { title: 'Packed and ready!',           sub: 'Your package is packed and awaiting pickup.' },
+            'Moving to destination warehouse': { title: 'Moving between warehouses', sub: 'Your package is on its way to the warehouse nearest to you.' },
+            'At destination warehouse': { title: 'Arrived at your local warehouse', sub: 'Your package is at the destination warehouse and waiting for final delivery assignment.' },
             'Shipped':          { title: 'Your order is shipped!',      sub: 'Your package is on its way to you.' },
             'Out for Delivery': { title: 'Out for delivery!',           sub: 'Your delivery hero is heading to your door.' },
+            'Delivery Confirmation Pending': { title: 'Please confirm delivery', sub: 'Your package will remain unconfirmed until you respond.' },
             'Delivered':        { title: 'Successfully delivered! 🎉',  sub: 'Your order has arrived. Enjoy your purchase!' },
             'Cancelled':        { title: 'Order cancelled',             sub: 'This order has been cancelled.' }
         };
@@ -229,16 +270,9 @@
     }
 
     /* ── Status & dates ── */
-    var STATUS_INDEX = {
-        'Pending': 0, 'Confirmed': 0, 'Order placed': 0,
-        'Packed & Ready': 1, 'Shipped': 1,
-        'Out for Delivery': 2,
-        'Delivered': 3,
-        'Cancelled': -1
-    };
-
     var STEPS = [
         { label: 'Order Placed',     desc: 'We received your order',       icon: '📦' },
+        { label: 'Picked Up from Owner', desc: 'The package has been collected from the seller', icon: '🛍️' },
         { label: 'Packed & Ready',   desc: 'Packed at our warehouse',       icon: '🏭' },
         { label: 'Out for Delivery', desc: 'On its way to your door',       icon: '🚚' },
         { label: 'Delivered',        desc: 'Successfully delivered to you', icon: '✅' }
@@ -250,48 +284,199 @@
     }
 
     /* ── Timeline ── */
-    function buildTimeline(currentStatus, currentStep, deliveryDate) {
-        var timeline    = document.getElementById('trackingTimeline');
-        var progressBar = document.getElementById('timelineProgressBar');
-        if (!timeline) return;
+    function buildTimeline(currentStatus, expectedDeliveryDate) {
+        var fallback = document.getElementById('trackingTimeline');
+        var fulfillmentList = document.getElementById('fulfillmentTimelineList');
+        if (!fallback || !fulfillmentList) return;
+        var fulfillments = order.fulfillments || [];
+        fulfillmentList.replaceChildren();
 
-        // remove any old step nodes
-        Array.from(timeline.querySelectorAll('.timeline-step')).forEach(function(el) { el.remove(); });
-
-        if (currentStep < 0) {
-            progressBar.style.width = '0%';
-            var note = document.createElement('p');
-            note.style.cssText = 'color:#ef4444;font-weight:700;padding:16px;text-align:center;flex:1;';
-            note.textContent = '✗ This order was cancelled.';
-            timeline.appendChild(note);
+        if (fulfillments.length) {
+            fallback.classList.add('hidden');
+            fulfillments.forEach(function(fulfillment) {
+                var card = document.createElement('article');
+                card.className = 'fulfillment-timeline-card';
+                var heading = document.createElement('h4');
+                var productNames = (fulfillment.items || []).map(function(item) {
+                    return item.productName;
+                }).filter(Boolean).join(', ');
+                heading.textContent = (fulfillment.ownerName || 'Seller')
+                    + (productNames ? ' · ' + productNames : '');
+                var status = document.createElement('span');
+                var packageStatus = titleCaseStatus(fulfillment.status);
+                status.className = 'fulfillment-timeline-status status-'
+                    + packageStatus.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                status.textContent = packageStatus;
+                card.append(heading, status);
+                var timeline = document.createElement('div');
+                timeline.className = 'tracking-timeline five-stage';
+                card.appendChild(timeline);
+                fulfillmentList.appendChild(card);
+                renderTimelineSteps(
+                    timeline,
+                    fulfillment.status,
+                    fulfillment,
+                    fulfillment.expectedDeliveryDate || expectedDeliveryDate
+                );
+            });
             return;
         }
 
-        STEPS.forEach(function(step, i) {
-            var isActive  = i <= currentStep;
-            var isCurrent = i === currentStep;
+        fallback.classList.remove('hidden');
+        fallback.classList.add('five-stage');
+        renderTimelineSteps(fallback, currentStatus, null, expectedDeliveryDate);
+    }
 
+    function statusKey(status) {
+        if (status === 'PICKED_UP_FROM_OWNER') return status;
+        if (status === 'PACKED_READY' || status === 'PACKED') return 'PACKED_READY';
+        if (status === 'OUT_FOR_DELIVERY' || status === 'SHIPPED') return 'OUT_FOR_DELIVERY';
+        if (status === 'DELIVERY_CONFIRMATION_PENDING') return status;
+        return status;
+    }
+
+    function renderTimelineSteps(timeline, rawStatus, fulfillment, expectedDeliveryDate) {
+        var status = statusKey(rawStatus);
+        var currentStep = ({
+            PENDING: 0,
+            AWAITING_OWNER_CONFIRMATION: 0,
+            CONFIRMED: 0,
+            PICKED_UP_FROM_OWNER: 1,
+            PACKED_READY: 2,
+            IN_TRANSIT_TO_STORE: 2,
+            AT_DESTINATION_STORE: 2,
+            OUT_FOR_DELIVERY: 3,
+            DELIVERY_CONFIRMATION_PENDING: 3,
+            DELIVERED: 4
+        })[status];
+        var progressBar = document.createElement('div');
+        progressBar.className = 'timeline-progress-bar';
+        timeline.replaceChildren(progressBar);
+
+        if (status === 'CANCELLED' || status === 'REJECTED') {
+            var note = document.createElement('p');
+            note.className = 'timeline-cancelled-note';
+            note.textContent = 'This seller fulfillment was ' + status.toLowerCase() + '.';
+            timeline.appendChild(note);
+            return;
+        }
+        if (currentStep === undefined) currentStep = 0;
+
+        var timestamps = fulfillment ? [
+            fulfillment.placedAt,
+            fulfillment.pickupAt,
+            fulfillment.warehouseReceivedAt,
+            fulfillment.dispatchedAt,
+            fulfillment.deliveredAt
+        ] : [order.placedAt, null, null, null, null];
+
+        STEPS.forEach(function(step, index) {
+            var isActive = index <= currentStep;
             var div = document.createElement('div');
-            div.className   = 'timeline-step' + (isActive ? ' active' : '') + (isCurrent ? ' current' : '');
-            div.dataset.step = String(i);
-            div.style.animation = 'stepFadeIn 0.5s ' + (i * 0.15) + 's both';
+            div.className = 'timeline-step' + (isActive ? ' active' : '')
+                + (index === currentStep ? ' current' : '');
+            var icon = document.createElement('div');
+            icon.className = 'timeline-step-icon';
+            var mark = document.createElement('span');
+            mark.className = 'timeline-checkmark';
+            mark.textContent = isActive ? '✓' : '';
+            icon.appendChild(mark);
 
-            div.innerHTML =
-                '<div class="timeline-step-icon">' +
-                    '<span class="timeline-checkmark">' + (isActive ? step.icon : '') + '</span>' +
-                '</div>' +
-                '<div class="timeline-step-content">' +
-                    '<h4>' + step.label + '</h4>' +
-                    '<p>' + step.desc + '</p>' +
-                    (i === 0 ? '<span class="timeline-step-date">' + fmtDateTime(order.placedAt) + '</span>' : '') +
-                    (i === 3 && currentStep === 3 ? '<span class="timeline-step-date">' + fmtDate(deliveryDate) + '</span>' : '') +
-                '</div>';
-
+            var content = document.createElement('div');
+            content.className = 'timeline-step-content';
+            var title = document.createElement('h4');
+            title.textContent = step.label;
+            var description = document.createElement('p');
+            description.textContent = index === 2 && status === 'IN_TRANSIT_TO_STORE'
+                ? 'Your package is moving to the destination warehouse.'
+                : index === 2 && status === 'AT_DESTINATION_STORE'
+                    ? 'Your package has arrived at the destination warehouse.'
+                    : step.desc;
+            content.append(title, description);
+            if (timestamps[index]) {
+                var time = document.createElement('span');
+                time.className = 'timeline-step-date';
+                time.textContent = fmtDateTime(timestamps[index]);
+                content.appendChild(time);
+            }
+            if (index === 4 && expectedDeliveryDate) {
+                var expected = document.createElement('span');
+                expected.className = 'timeline-step-date';
+                expected.textContent = 'Expected ' + fmtDate(expectedDeliveryDate);
+                content.appendChild(expected);
+            }
+            div.append(icon, content);
             timeline.appendChild(div);
         });
 
-        var pct = currentStep <= 0 ? 0 : (currentStep / (STEPS.length - 1)) * 100;
-        setTimeout(function() { progressBar.style.width = pct + '%'; }, 250);
+        var pct = currentStep <= 0 ? 0 : (currentStep / (STEPS.length - 1)) * 80;
+        setTimeout(function() { progressBar.style.width = pct + '%'; }, 150);
+    }
+
+    function renderDeliveryConfirmation() {
+        var pending = (order.fulfillments || []).filter(function(fulfillment) {
+            return fulfillment.status === 'DELIVERY_CONFIRMATION_PENDING';
+        });
+        var banner = document.getElementById('deliveryConfirmationBanner');
+        var summary = document.getElementById('deliveryConfirmationSummary');
+        var reopen = document.getElementById('reopenDeliveryConfirmation');
+        var dialog = document.getElementById('deliveryConfirmationDialog');
+        if (!banner || !dialog) return;
+
+        if (!pending.length) {
+            banner.classList.add('hidden');
+            if (dialog.open) dialog.close();
+            activeConfirmationId = null;
+            return;
+        }
+
+        activeConfirmationId = pending[0].id;
+        banner.classList.remove('hidden');
+        if (summary) {
+            summary.textContent = pending.length === 1
+                ? 'Please confirm whether your package arrived.'
+                : pending.length + ' seller packages are awaiting your delivery confirmation.';
+        }
+        if (reopen) {
+            reopen.onclick = function() {
+                if (!dialog.open) dialog.showModal();
+            };
+        }
+
+        var shownKey = 'delivery-confirmation-shown-' + activeConfirmationId;
+        if (!sessionStorage.getItem(shownKey) && !dialog.open) {
+            sessionStorage.setItem(shownKey, 'true');
+            dialog.showModal();
+        }
+    }
+
+    async function submitDeliveryConfirmation(delivered) {
+        if (!activeConfirmationId || !window.tapApi) return;
+        var yesButton = document.getElementById('deliveryReceived');
+        var noButton = document.getElementById('deliveryNotReceived');
+        var note = document.getElementById('deliveryConfirmationNote');
+        [yesButton, noButton].forEach(function(button) {
+            if (button) button.disabled = true;
+        });
+        try {
+            await window.tapApi.delivery.confirmCustomerDelivery(
+                activeConfirmationId,
+                delivered,
+                note ? note.value.trim() : ''
+            );
+            var dialog = document.getElementById('deliveryConfirmationDialog');
+            if (dialog && dialog.open) dialog.close();
+            if (note) note.value = '';
+            showToast('success', delivered ? 'Delivery confirmed' : 'Delivery reported missing',
+                delivered ? 'Thank you for confirming receipt.' : 'The delivery team has been asked to follow up.');
+            await loadOrder(true);
+        } catch (e) {
+            showToast('error', 'Could not record your response', e.message || 'Please try again.');
+        } finally {
+            [yesButton, noButton].forEach(function(button) {
+                if (button) button.disabled = false;
+            });
+        }
     }
 
     /* ── Order items & details ── */
@@ -370,19 +555,227 @@
     function setupActionSections(currentStatus) {
         var cancelEl = document.getElementById('cancelSection');
         var retExEl  = document.getElementById('returnExchangeSection');
-        if (!cancelEl || !retExEl) return;
+        if (cancelEl) {
+            cancelEl.classList.toggle('hidden',
+                currentStatus === 'Delivered' || currentStatus === 'Cancelled');
+        }
+        var canRequestService = (order.items || []).some(isReturnOrExchangeEligible);
+        var hasServiceHistory = (order.serviceRequests || []).length > 0;
+        if (retExEl) retExEl.classList.toggle('hidden', !canRequestService && !hasServiceHistory);
+    }
 
-        if (currentStatus === 'Delivered') {
-            cancelEl.classList.add('hidden');
-            retExEl.classList.remove('hidden');
-        } else if (currentStatus === 'Cancelled') {
-            cancelEl.classList.add('hidden');
-            retExEl.classList.add('hidden');
-        } else {
-            cancelEl.classList.remove('hidden');
-            retExEl.classList.add('hidden');
+    var pendingServiceRequestType = null;
+    var serviceRequestDialog = document.getElementById('serviceRequestDialog');
+    var serviceRequestForm = document.getElementById('serviceRequestForm');
+    var serviceRequestPreviewUrls = new Map();
+
+    function clearServiceRequestPreview(previewId) {
+        var objectUrl = serviceRequestPreviewUrls.get(previewId);
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        serviceRequestPreviewUrls.delete(previewId);
+        var preview = document.getElementById(previewId);
+        if (preview) {
+            preview.replaceChildren();
+            preview.classList.add('hidden');
         }
     }
+
+    function showServiceRequestPreview(inputId, previewId, mediaType) {
+        clearServiceRequestPreview(previewId);
+        var input = document.getElementById(inputId);
+        var preview = document.getElementById(previewId);
+        var file = input && input.files && input.files[0];
+        if (!file || !preview) return;
+
+        var isImage = mediaType === 'image' && file.type.indexOf('image/') === 0;
+        var isVideo = mediaType === 'video' && file.type === 'video/mp4';
+        if (!isImage && !isVideo) return;
+
+        var objectUrl = URL.createObjectURL(file);
+        serviceRequestPreviewUrls.set(previewId, objectUrl);
+        var media = document.createElement(isImage ? 'img' : 'video');
+        media.src = objectUrl;
+        if (isImage) {
+            media.alt = 'Selected product photo';
+        } else {
+            media.controls = true;
+            media.playsInline = true;
+            media.preload = 'metadata';
+        }
+        preview.replaceChildren(media);
+        preview.classList.remove('hidden');
+    }
+
+    var serviceRequestPhotoInput = document.getElementById('serviceRequestPhoto');
+    var serviceRequestVideoInput = document.getElementById('serviceRequestVideo');
+    if (serviceRequestPhotoInput) {
+        serviceRequestPhotoInput.addEventListener('change', function() {
+            showServiceRequestPreview('serviceRequestPhoto', 'serviceRequestPhotoPreview', 'image');
+        });
+    }
+    if (serviceRequestVideoInput) {
+        serviceRequestVideoInput.addEventListener('change', function() {
+            showServiceRequestPreview('serviceRequestVideo', 'serviceRequestVideoPreview', 'video');
+        });
+    }
+    if (serviceRequestForm) {
+        serviceRequestForm.addEventListener('reset', function() {
+            clearServiceRequestPreview('serviceRequestPhotoPreview');
+            clearServiceRequestPreview('serviceRequestVideoPreview');
+        });
+    }
+    if (serviceRequestDialog) {
+        serviceRequestDialog.addEventListener('close', function() {
+            clearServiceRequestPreview('serviceRequestPhotoPreview');
+            clearServiceRequestPreview('serviceRequestVideoPreview');
+        });
+    }
+
+    function renderServiceRequestStatus() {
+        var status = document.getElementById('serviceRequestStatus');
+        if (!status || !order) return;
+        var requests = order.serviceRequests || [];
+        status.innerHTML = requests.map(function(request) {
+            return '<p><strong>' + escapeOrderText(request.productName) + '</strong> · ' +
+                escapeOrderText(request.type) + ' · ' +
+                escapeOrderText(String(request.status || '').replaceAll('_', ' ')) +
+                (request.reviewNotes ? '<br>' + escapeOrderText(request.reviewNotes) : '') +
+                '</p>';
+        }).join('');
+        var pendingItems = new Set(requests.filter(function(request) {
+            return request.status !== 'REJECTED';
+        }).map(function(request) { return String(request.orderItemId); }));
+        ['returnOrderBtn', 'exchangeOrderBtn'].forEach(function(id) {
+            var button = document.getElementById(id);
+            if (!button) return;
+            var availableItems = (order.items || []).filter(function(item) {
+                return isReturnOrExchangeEligible(item) && !pendingItems.has(String(item.id));
+            });
+            button.disabled = availableItems.length === 0;
+            button.textContent = button.disabled
+                ? (order.serviceRequests || []).some(function(request) {
+                    return request.status !== 'REJECTED';
+                }) && (order.items || []).some(isReturnOrExchangeEligible)
+                    ? 'A request is already in progress'
+                    : 'No eligible delivered products'
+                : id === 'returnOrderBtn' ? 'Request Return' : 'Request Exchange';
+        });
+    }
+
+    function isReturnOrExchangeEligible(item) {
+        if (item.cancelled || item.fulfillmentStatus !== 'DELIVERED' || !item.deliveredAt) return false;
+        var deliveredAt = new Date(item.deliveredAt).getTime();
+        return Number.isFinite(deliveredAt) && Date.now() <= deliveredAt + 7 * 24 * 60 * 60 * 1000;
+    }
+
+    function openServiceRequest(type) {
+        if (!serviceRequestDialog || !order) {
+            showToast('error', 'Request form unavailable', 'Refresh the page and try again.');
+            return;
+        }
+        pendingServiceRequestType = type;
+        document.getElementById('serviceRequestTitle').textContent =
+            type === 'RETURN' ? 'Request a return' : 'Request an exchange';
+        var requests = order.serviceRequests || [];
+        var requestedItems = new Set(requests.filter(function(request) {
+            return request.status !== 'REJECTED';
+        }).map(function(request) { return String(request.orderItemId); }));
+        var itemSelect = document.getElementById('serviceRequestItem');
+        var serviceRequestForm = document.getElementById('serviceRequestForm');
+        if (!itemSelect || !serviceRequestForm) {
+            showToast('error', 'Request form unavailable', 'Refresh the page to load the latest return and exchange form.');
+            return;
+        }
+        var availableItems = (order.items || []).filter(function(item) {
+            return isReturnOrExchangeEligible(item) && !requestedItems.has(String(item.id));
+        });
+        itemSelect.innerHTML = availableItems.map(function(item) {
+            return '<option value="' + escapeOrderText(item.id) + '">' +
+                escapeOrderText(item.name) + ' × ' + Number(item.qty) + '</option>';
+        }).join('');
+        if (!availableItems.length) {
+            var hasEligibleItems = (order.items || []).some(isReturnOrExchangeEligible);
+            showToast('info', hasEligibleItems ? 'Request already submitted' : 'Return window ended',
+                hasEligibleItems
+                    ? 'Each product can have one return or exchange request at a time.'
+                    : 'Requests are available within 7 days of delivery.');
+            return;
+        }
+        serviceRequestForm.reset();
+        if (!serviceRequestDialog.open) serviceRequestDialog.showModal();
+    }
+
+    function validateVideoDuration(file) {
+        return new Promise(function(resolve, reject) {
+            var video = document.createElement('video');
+            var url = URL.createObjectURL(file);
+            video.preload = 'metadata';
+            video.onloadedmetadata = function() {
+                URL.revokeObjectURL(url);
+                if (video.duration > 120) {
+                    reject(new Error('Choose a product video that is no longer than 2 minutes.'));
+                } else {
+                    resolve();
+                }
+            };
+            video.onerror = function() {
+                URL.revokeObjectURL(url);
+                reject(new Error('The selected video could not be read. Choose a valid MP4 file.'));
+            };
+            video.src = url;
+        });
+    }
+
+    var cancelServiceRequestButton = document.getElementById('cancelServiceRequest');
+    if (cancelServiceRequestButton && serviceRequestDialog) {
+        cancelServiceRequestButton.addEventListener('click', function() {
+            serviceRequestDialog.close();
+        });
+    }
+    var serviceRequestForm = document.getElementById('serviceRequestForm');
+    if (serviceRequestForm) serviceRequestForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        var submitButton = document.getElementById('submitServiceRequest');
+        var photoInput = document.getElementById('serviceRequestPhoto');
+        var videoInput = document.getElementById('serviceRequestVideo');
+        var itemSelect = document.getElementById('serviceRequestItem');
+        var reasonSelect = document.getElementById('serviceRequestReason');
+        var detailsInput = document.getElementById('serviceRequestDetails');
+        if (!submitButton || !photoInput || !videoInput || !itemSelect || !reasonSelect || !detailsInput) {
+            showToast('error', 'Request form incomplete', 'Refresh the page and try again.');
+            return;
+        }
+        var photo = photoInput.files[0];
+        var video = videoInput.files[0];
+        submitButton.disabled = true;
+        try {
+            if (!pendingServiceRequestType) throw new Error('Choose return or exchange before submitting.');
+            if (!photo || !video) throw new Error('Attach both a product photo and an MP4 video.');
+            if (photo.size > 5 * 1024 * 1024) throw new Error('The product photo must be 5 MB or smaller.');
+            if (video.size > 100 * 1024 * 1024) throw new Error('The product video must be 100 MB or smaller.');
+            await validateVideoDuration(video);
+            var photoUpload = await window.tapApi.orders.uploadEvidence(photo);
+            var videoUpload = await window.tapApi.orders.uploadEvidence(video);
+            var itemId = itemSelect.value;
+            var request = await window.tapApi.orders.createServiceRequest(order._apiId, itemId, {
+                type: pendingServiceRequestType,
+                reason: reasonSelect.value,
+                details: detailsInput.value.trim(),
+                photoUrl: photoUpload.url,
+                videoUrl: videoUpload.url
+            });
+            order.serviceRequests = [...(order.serviceRequests || []), request];
+            if (pendingServiceRequestType === 'RETURN') order.returnRequested = true;
+            else order.exchangeRequested = true;
+            serviceRequestDialog.close();
+            showToast('success', 'Request sent to the owner', 'The warehouse and seller have been notified for review.');
+            renderPage();
+        } catch (error) {
+            showToast('error', 'Request could not be submitted', error.message || 'Please try again.');
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
 
     /* ── Confirm modal ── */
     var modal       = document.getElementById('confirmModal');
@@ -416,7 +809,7 @@
         var exchangeBtn = document.getElementById('exchangeOrderBtn');
 
         if (cancelBtn) {
-            cancelBtn.addEventListener('click', function() {
+            cancelBtn.onclick = function() {
                 openModal('Cancel Order', 'Are you sure? This cannot be undone.', async function() {
                     try {
                         var apiId = order._apiId;
@@ -432,49 +825,34 @@
                     showToast('success', 'Order cancelled', 'Your order has been cancelled.');
                     setTimeout(function() { window.location.reload(); }, 1600);
                 });
-            });
+            };
         }
 
         if (returnBtn) {
-            returnBtn.addEventListener('click', function() {
-                openModal('Request Return', 'Our team will contact you within 24 hours to arrange pickup.', async function() {
-                    try {
-                        var apiId = order._apiId;
-                        if (apiId && window.tapApi && window.tapAuth.isLoggedIn()) {
-                            await window.tapApi.orders.return(apiId);
-                        }
-                    } catch(e) {
-                        showToast('error', 'Update failed', e.message || 'Run Spring Boot and try again.');
-                        return;
-                    }
-                    order.returnRequested   = true;
-                    order.returnRequestedAt = new Date().toISOString();
-                    saveOrders();
-                    showToast('success', 'Return requested', 'We will reach out within 24 hours.');
-                });
-            });
+            returnBtn.onclick = function() { openServiceRequest('RETURN'); };
         }
 
         if (exchangeBtn) {
-            exchangeBtn.addEventListener('click', function() {
-                openModal('Request Exchange', 'Our team will contact you within 24 hours to process the exchange.', async function() {
-                    try {
-                        var apiId = order._apiId;
-                        if (apiId && window.tapApi && window.tapAuth.isLoggedIn()) {
-                            await window.tapApi.orders.exchange(apiId);
-                        }
-                    } catch(e) {
-                        showToast('error', 'Update failed', e.message || 'Run Spring Boot and try again.');
-                        return;
-                    }
-                    order.exchangeRequested   = true;
-                    order.exchangeRequestedAt = new Date().toISOString();
-                    saveOrders();
-                    showToast('success', 'Exchange requested', 'We will reach out within 24 hours.');
-                });
-            });
+            exchangeBtn.onclick = function() { openServiceRequest('EXCHANGE'); };
         }
     }
+
+    var deliveryReceivedButton = document.getElementById('deliveryReceived');
+    if (deliveryReceivedButton) deliveryReceivedButton.addEventListener('click', function() {
+        submitDeliveryConfirmation(true);
+    });
+    var deliveryNotReceivedButton = document.getElementById('deliveryNotReceived');
+    if (deliveryNotReceivedButton) deliveryNotReceivedButton.addEventListener('click', function() {
+        submitDeliveryConfirmation(false);
+    });
+    window.addEventListener('beforeunload', function() {
+        if (trackingPoll) clearInterval(trackingPoll);
+    });
+    trackingPoll = setInterval(function() {
+        if (!document.hidden && window.tapAuth.isLoggedIn()) {
+            loadOrder(true);
+        }
+    }, 20000);
 
     /* ── Inline styles for product rows (no CSS file dependency) ── */
     var styleTag = document.createElement('style');

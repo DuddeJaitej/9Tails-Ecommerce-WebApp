@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" fill="none">
+  <defs>
+    <linearGradient id="heart" x1="76" y1="54" x2="165" y2="133" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB0CA"/>
+      <stop offset="1" stop-color="#E86192"/>
+    </linearGradient>
+    <linearGradient id="heart-side" x1="145" y1="70" x2="183" y2="129" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D94F83"/>
+      <stop offset="1" stop-color="#A83C6C"/>
+    </linearGradient>
+    <filter id="shadow" x="35" y="124" width="171" height="42" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+  <ellipse cx="121" cy="144" fill="#58445A" fill-opacity=".17" filter="url(#shadow)" rx="67" ry="10"/>
+  <path d="M120 138S57 99 57 68c0-16 12-28 28-28 14 0 25 8 35 21 10-13 21-21 35-21 16 0 28 12 28 28 0 31-63 70-63 70Z" fill="url(#heart)"/>
+  <path d="M155 40c16 0 28 12 28 28 0 30-59 67-63 69v-76c10-13 21-21 35-21Z" fill="url(#heart-side)"/>
+  <path d="M78 67c0-9 7-16 16-16" stroke="#FFF" stroke-linecap="round" stroke-opacity=".75" stroke-width="5"/>
+  <path d="m184 82 4 8 8 4-8 4-4 8-4-8-8-4 8-4 4-8Z" fill="#F4C968"/>
+  <circle cx="55" cy="91" r="5" fill="#8CCDBA"/>
+  <circle cx="173" cy="34" r="4" fill="#C5A7D4"/>
+  <path d="m64 48 3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6Z" fill="#F4C968"/>
+</svg>

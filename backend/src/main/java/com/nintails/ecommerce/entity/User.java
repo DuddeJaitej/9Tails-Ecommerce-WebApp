@@ -32,6 +32,16 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(length = 20)
+    private String phoneNumber;
+
+    @Column(name = "profile_photo_url", length = 1000)
+    private String profilePhotoUrl;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean phoneVerified = false;
+
     @NotBlank
     @Column(nullable = false)
     private String password;
@@ -57,6 +67,18 @@ public class User {
     @Builder.Default
     private List<WishlistItem> wishlistItems = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_store_id")
+    private BusinessLocation deliveryStore;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_warehouse_id")
+    private WarehouseLocation deliveryWarehouse;
+
+    @Builder.Default
+    @Column(name = "delivery_agent_active", nullable = false)
+    private Boolean deliveryAgentActive = true;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -65,6 +87,6 @@ public class User {
     private LocalDateTime updatedAt;
 
     public enum Role {
-        USER, ADMIN
+        USER, OWNER, DELIVERY_AGENT, WAREHOUSE_OPERATOR, ADMIN
     }
 }
